@@ -1,22 +1,20 @@
 # react-native-use-form
 
-Simple form library with great user and developer experience
+Simple form library for React Native with great UX for developer and end-user.
 
 ## Installation
 
+```sh
+yarn add react-native-use-form
+```
+or
 ```sh
 npm install react-native-use-form
 ```
 
 ## Usage
 
-```js
-import UseForm from "react-native-use-form";
-
-// ...
-
-const result = await UseForm.multiply(3, 7);
-```
+TODO
 
 ## Contributing
 
