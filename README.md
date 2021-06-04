@@ -41,7 +41,7 @@ import { Button, HelperText, TextInput } from 'react-native-paper';
 
 export default function App() {
   const [
-    { errors, submit, formProps, hasError },
+    { errors, values, submit, formProps, hasError },
     { email, telephone },
   ] = useFormState(
     {
@@ -52,7 +52,7 @@ export default function App() {
       onChange: () => {
         // TODO: fix enum in backend
       },
-      onSubmit: () => {
+      onSubmit: (values) => {
         alert('no errors we can submit');
       },
     }
