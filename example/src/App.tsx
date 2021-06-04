@@ -1,21 +1,89 @@
 import * as React from 'react';
 
-import { StyleSheet, View } from 'react-native';
-// import { useFormState } from 'react-native-use-form';
+import { View } from 'react-native';
+import { useFormState, Form } from 'react-native-use-form';
+import { Button, HelperText, TextInput } from 'react-native-paper';
 
 export default function App() {
-  return <View style={styles.container} />;
+  const [
+    { errors, submit, formProps, hasError },
+    { email, telephone },
+  ] = useFormState(
+    {
+      email: '',
+      telephone: '',
+    },
+    {
+      onChange: () => {
+        // TODO: fix enum in backend
+      },
+      onSubmit: () => {
+        // alert('no errors we can submit');
+      },
+    }
+  );
+  return (
+    <View
+      style={{
+        flex: 1,
+        maxWidth: 500,
+        alignSelf: 'center',
+      }}
+    >
+      <Form {...formProps}>
+        <TextInput
+          mode="outlined"
+          error={hasError('email')}
+          {...email('email', {
+            validate: (v) => {
+              return looksLikeMail(v) ? true : 'Email-address is invalid';
+            },
+          })}
+          label="E-mail"
+        />
+        <HelperText type="error" visible={hasError('email')}>
+          {errors.email}
+        </HelperText>
+        <TextInput
+          mode="outlined"
+          {...telephone('telephone', {
+            validate: (v) => {
+              return looksLikeTelephone(v) ? true : 'Telephone is invalid';
+            },
+          })}
+          label="Telefoon"
+          error={hasError('telephone')}
+        />
+        <HelperText type="error" visible={hasError('telephone')}>
+          {errors.telephone}
+        </HelperText>
+        <Button mode="contained" onPress={submit}>
+          Save
+        </Button>
+      </Form>
+    </View>
+  );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  box: {
-    width: 60,
-    height: 60,
-    marginVertical: 20,
-  },
-});
+function looksLikeTelephone(str: string): boolean {
+  if (str.length !== 10) {
+    return false;
+  }
+  let isNum = /^\d+$/.test(str);
+  if (!isNum) {
+    return false;
+  }
+  return true;
+}
+
+function looksLikeMail(str: string): boolean {
+  let lastAtPos = str.lastIndexOf('@');
+  let lastDotPos = str.lastIndexOf('.');
+  return (
+    lastAtPos < lastDotPos &&
+    lastAtPos > 0 &&
+    str.indexOf('@@') === -1 &&
+    lastDotPos > 2 &&
+    str.length - lastDotPos > 2
+  );
+}

@@ -6,10 +6,11 @@ import type {
   TextInputProps,
 } from 'react-native';
 
-import { useFormContext } from './FormContext';
-import { useReferencedCallback } from './utils';
+import { FormContext, FormContextType } from './FormContext';
+import { useLatest, useReferencedCallback } from './utils';
 
 type FormTextInputProps = {
+  testID: string;
   value: string;
   onBlur: TextInputProps['onBlur'];
   onChangeText: TextInputProps['onChangeText'];
@@ -78,10 +79,125 @@ export function indexer(): IndexerType {
   };
 }
 
+export function useFormContext(): FormContextType & {
+  formIndex: number;
+} {
+  const px = React.useContext(FormContext);
+  const ix = useInnerContext(!!px);
+  const ctx = (px || ix)!;
+  const idx = React.useRef<number>(px ? px.indexer.add() : ctx.indexer.i);
+  return {
+    ...ctx,
+    formIndex: idx.current,
+  };
+}
+
+type IndexKeyMap = Record<string, number>;
+type RefKeyMap = Record<string, TextInput>;
+
+type FormIndexKeyMap = Record<number, IndexKeyMap>;
+export type FormRefKeyMap = Record<number, RefKeyMap>;
+
+export function useInnerContext(skip?: boolean) {
+  // const formIndex = React.useRef<number>(0);
+  const [lastKey, setLastKey] = React.useState<string | undefined>(undefined);
+  const refIndex = React.useRef<number>(0);
+
+  const indexForKey = React.useRef<FormIndexKeyMap>({});
+  const refForKey = React.useRef<FormRefKeyMap>({});
+  const referencedCallback = useReferencedCallback();
+
+  React.useEffect(() => {
+    // we would rather not do this hook at all, but we need to keep amount of hooks the same :)
+    if (skip) {
+      return;
+    }
+    const elements = Object.keys(refForKey.current).filter(
+      (key, _) => refForKey.current[key as any] !== null
+    );
+    const lKey = elements[elements.length - 1];
+
+    if (lastKey !== lKey) {
+      setLastKey(lKey);
+    }
+  }, [skip, lastKey, setLastKey, refForKey]);
+
+  // we would rather not do this hook at all, but we need to keep amount of hooks the same :)
+  if (skip) {
+    return undefined;
+  }
+
+  const referencer: ReferencerType = (key, formIndex) => {
+    return {
+      ref: referencedCallback(`ref.${key}`, (e: TextInput) => {
+        if (e === null) {
+          return;
+        }
+
+        const rk = refForKey.current;
+        const ik = indexForKey.current;
+        // set default state if undefined
+        rk[formIndex] = rk[formIndex] || {};
+        ik[formIndex] = ik[formIndex] || {};
+
+        const index = rk[formIndex][key];
+        if (index === undefined) {
+          refIndex.current = refIndex.current + 1;
+          ik[formIndex][key] = refIndex.current;
+        }
+        rk[formIndex][key] = e;
+      }),
+      onSubmitEditing:
+        lastKey === key
+          ? undefined
+          : referencedCallback(`focusNext.${key}`, () => {
+              const rk = refForKey.current[formIndex] || {};
+              const ik = indexForKey.current[formIndex] || {};
+              const currentField = rk[key];
+
+              // combine fields of current and next form
+              const fields = Object.keys(refForKey.current)
+                .map((frmKey) => {
+                  const fi = Number(frmKey);
+                  const refs = refForKey.current[fi];
+                  const ixs = indexForKey.current[fi];
+                  return Object.keys(refs)
+                    .filter((e) => !!e)
+                    .map((k) => ({
+                      element: refs[k],
+                      index: ixs[k],
+                      fi,
+                    }))
+                    .sort((a, b) => a.fi - b.fi && a.index - b.index);
+                })
+                .flat();
+
+              const nextField = fields.find((f) => {
+                const p = f.element.props;
+                // skip disabled fields in focus
+                if ((p as any).disabled === true || p.editable === false) {
+                  return false;
+                }
+                // already sorted so the first one to hit above current index is the next field
+                return f.index > ik[key];
+              });
+
+              nextField?.element?.focus?.();
+              currentField.blur();
+            }),
+      blurOnSubmit: lastKey === key,
+      returnKeyType: lastKey === key ? undefined : 'next',
+    };
+  };
+
+  return { referencer, indexer: indexer(), refForKey };
+}
+
 export default function useFormState<T>(
   initialState: T,
   options?: {
-    onChange: (newState: T) => void;
+    onChange?: (newState: T) => void;
+    onSubmit?: (newState: T) => void;
   }
 ): [
   {
@@ -94,11 +210,12 @@ export default function useFormState<T>(
       key: K,
       value: boolean | string | undefined
     ) => void;
+    submit: () => void;
     formProps: {
       indexer: IndexerType;
       referencer: ReferencerType;
     };
-    validate: () => boolean;
+    hasError: <K extends keyof T>(key: K) => boolean;
   },
   {
     decimalText: FormTextType<T>;
@@ -106,6 +223,7 @@ export default function useFormState<T>(
     decimal: FormTextType<T>;
     number: FormTextType<T>;
     text: FormTextType<T>;
+
     username: FormTextType<T>;
     password: FormTextType<T>;
     email: FormTextType<T>;
@@ -119,11 +237,26 @@ export default function useFormState<T>(
 ] {
   const referencedCallback = useReferencedCallback();
   const ctx = useFormContext();
+  const [wasSubmitted, setWasSubmitted] = React.useState<boolean>(false);
   const [touched, sTouched] = React.useState<FieldsBoolean<T>>({});
   const [errors, sErrors] = React.useState<FieldsError<T>>({});
   const [values, setValues] = React.useState<T>(initialState);
 
-  const c = options?.onChange;
+  const valuesRef = useLatest(values);
+  const onChangeRef = useLatest(options?.onChange);
+  const errorsRef = useLatest(errors);
+
+  const setError = React.useCallback(
+    <K extends keyof T>(k: K, v: boolean | string | undefined) => {
+      if (v !== errorsRef.current[k]) {
+        sErrors((prev) => ({
+          ...prev,
+          [k]: v,
+        }));
+      }
+    },
+    [errorsRef, sErrors]
+  );
 
   const changeValue = React.useCallback(
     <K extends keyof T>(
@@ -131,6 +264,12 @@ export default function useFormState<T>(
       value: T[K],
       handlers: Customizing<T, keyof T> | undefined
     ) => {
+      const err = handlers?.validate?.(
+        valuesRef.current[key],
+        valuesRef.current
+      );
+      setError(key, err === true ? false : err);
+
       handlers?.onChangeText?.((value as any) as string);
       setValues((prev) => {
         const newValue = {
@@ -140,22 +279,29 @@ export default function useFormState<T>(
 
         // prevent endless re-render if called on nested form
         setTimeout(() => {
-          c && c(newValue);
+          onChangeRef?.current?.(newValue);
         }, 0);
 
         return newValue;
       });
     },
-    [setValues, c]
+    [setValues, onChangeRef, valuesRef, setError]
   );
 
-  const validate = () => {
-    // has error = false by default
-    // let he = false;
+  const onSubmitRef = useLatest(options?.onSubmit);
 
-    // TODO: check all keys
-    return false;
-  };
+  const submit = React.useCallback(() => {
+    setWasSubmitted(true);
+    // if it returns an object there are errors
+    const errorCount = Object.keys(errorsRef.current)
+      .map((key) => !!errorsRef.current[key as keyof T])
+      .filter((n) => n).length;
+    if (errorCount > 0) {
+      return;
+    }
+
+    onSubmitRef?.current?.(valuesRef.current);
+  }, [errorsRef, valuesRef, onSubmitRef]);
 
   const blur = <K extends keyof T>(
     k: K,
@@ -165,9 +311,6 @@ export default function useFormState<T>(
       `blur.${k}`,
       (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
         h?.onBlur?.(e);
-        // TODO: closure?
-        const err = h?.validate?.(values[k], values);
-        setError(k, err);
         setTouched(k, true);
       }
     );
@@ -177,6 +320,7 @@ export default function useFormState<T>(
     h?: Customizing<T, keyof T>
   ): FormTextInputProps => ({
     ...ctx.referencer(k as any, ctx.formIndex),
+    testID: k as string,
     onChangeText: referencedCallback(`text.${k}`, (n: T[K]) =>
       changeValue(k, n, h)
     ),
@@ -189,6 +333,7 @@ export default function useFormState<T>(
     h?: Customizing<T, keyof T>
   ): FormTextInputProps => ({
     ...ctx.referencer(k as any, ctx.formIndex),
+    testID: k as string,
     onChangeText: referencedCallback(`number.${k}`, (n: string) => {
       if (n !== '') {
         changeValue(k, Number(n) as any, h);
@@ -335,18 +480,6 @@ export default function useFormState<T>(
     }
   };
 
-  const setError = <K extends keyof T>(
-    k: K,
-    v: boolean | string | undefined
-  ) => {
-    if (v !== errors[k]) {
-      sErrors((prev) => ({
-        ...prev,
-        [k]: v,
-      }));
-    }
-  };
-
   const setTouched = <K extends keyof T>(k: K, v: boolean) => {
     if (v !== touched[k]) {
       sTouched((p) => ({
@@ -354,6 +487,11 @@ export default function useFormState<T>(
         [k]: v,
       }));
     }
+  };
+
+  const hasError = <K extends keyof T>(k: K): boolean => {
+    console.log({ touched, wasSubmitted, errors, values });
+    return (touched[k] || wasSubmitted) && errors[k] !== false;
   };
 
   return [
@@ -364,8 +502,9 @@ export default function useFormState<T>(
       setField,
       setError,
       setTouched,
-      validate,
+      submit,
       formProps: { referencer: ctx.referencer, indexer: ctx.indexer },
+      hasError,
     },
     {
       text,
