@@ -1,6 +1,6 @@
 {
   "name": "react-native-use-form",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Simple form library for React Native with great UX for developer and end-user.",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
