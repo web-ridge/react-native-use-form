@@ -48,6 +48,7 @@ export default function App() {
           mode="outlined"
           {...telephone('telephone', {
             validate: (v) => {
+              console.log({ v });
               return looksLikeTelephone(v) ? true : 'Telephone is invalid';
             },
           })}

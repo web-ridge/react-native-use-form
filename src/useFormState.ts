@@ -264,26 +264,20 @@ export default function useFormState<T>(
       value: T[K],
       handlers: Customizing<T, keyof T> | undefined
     ) => {
-      const err = handlers?.validate?.(
-        valuesRef.current[key],
-        valuesRef.current
-      );
+      const newValues = {
+        ...valuesRef.current,
+        [key]: value,
+      };
+
+      const err = handlers?.validate?.(value, newValues);
       setError(key, err === true ? false : err);
 
       handlers?.onChangeText?.((value as any) as string);
-      setValues((prev) => {
-        const newValue = {
-          ...prev,
-          [key]: value,
-        };
-
-        // prevent endless re-render if called on nested form
-        setTimeout(() => {
-          onChangeRef?.current?.(newValue);
-        }, 0);
-
-        return newValue;
-      });
+      setValues(newValues);
+      // prevent endless re-render if called on nested form
+      setTimeout(() => {
+        onChangeRef?.current?.(newValues);
+      }, 0);
     },
     [setValues, onChangeRef, valuesRef, setError]
   );
@@ -490,7 +484,6 @@ export default function useFormState<T>(
   };
 
   const hasError = <K extends keyof T>(k: K): boolean => {
-    console.log({ touched, wasSubmitted, errors, values });
     return (touched[k] || wasSubmitted) && errors[k] !== false;
   };
 
