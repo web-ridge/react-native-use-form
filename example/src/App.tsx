@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { View } from 'react-native';
-import { useFormState, Form } from 'react-native-use-form';
+import { useFormState, Form } from '../../src/index';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
 export default function App() {
@@ -63,10 +63,17 @@ export default function App() {
 
         <TextInput
           mode="outlined"
-          {...password('password')}
+          {...password('password', {
+            required: true,
+            minLength: 3,
+            maxLength: 10,
+          })}
           label="Wachtwoord"
           error={hasError('password')}
         />
+        <HelperText type="error" visible={hasError('password')}>
+          {errors.password}
+        </HelperText>
         <Button mode="contained" onPress={submit}>
           Save
         </Button>

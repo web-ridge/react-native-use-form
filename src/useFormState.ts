@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type {
+  LayoutChangeEvent,
   NativeSyntheticEvent,
   TextInput,
   TextInputFocusEventData,
@@ -13,6 +14,7 @@ type FormTextInputProps = {
   testID: string;
   value: string;
   onBlur: TextInputProps['onBlur'];
+  onLayout: TextInputProps['onLayout'];
   onChangeText: TextInputProps['onChangeText'];
   textContentType?: TextInputProps['textContentType'];
   autoCompleteType?: TextInputProps['autoCompleteType'];
@@ -29,9 +31,14 @@ type FormRawProps<V> = {
 };
 
 type Customizing<T, Key extends keyof T> = {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+
   validate?: (v: T[Key], values: T) => boolean | string | undefined;
   onChangeText?: TextInputProps['onChangeText'];
   onBlur?: TextInputProps['onBlur'];
+  onLayout?: TextInputProps['onLayout'];
 };
 
 type CustomizingRaw<V, T> = {
@@ -258,28 +265,55 @@ export default function useFormState<T>(
     [errorsRef, sErrors]
   );
 
+  const checkError = React.useCallback(
+    <K extends keyof T>(
+      k: K,
+      h: Customizing<T, keyof T> | undefined,
+      v: T[K],
+      allV: T
+    ) => {
+      let err: boolean | string | undefined = undefined;
+
+      if (h) {
+        err = h.validate?.(v, allV);
+        if (!err) {
+          if (h?.required === true && !v) {
+            err = `${k} is required`;
+          } else if (h.minLength !== undefined && `${v}`.length < h.minLength) {
+            err = `${k} should be more than ${h.minLength}`;
+          } else if (h.maxLength !== undefined && `${v}`.length > h.maxLength) {
+            err = `${k} should be less than ${h.maxLength}`;
+          }
+        }
+      }
+
+      setError(k, err === true ? false : err);
+    },
+    [setError]
+  );
+
   const changeValue = React.useCallback(
     <K extends keyof T>(
-      key: K,
-      value: T[K],
-      handlers: Customizing<T, keyof T> | undefined
+      k: K,
+      v: T[K],
+      h: Customizing<T, keyof T> | undefined
     ) => {
       const newValues = {
         ...valuesRef.current,
-        [key]: value,
+        [k]: v,
       };
-
-      const err = handlers?.validate?.(value, newValues);
-      setError(key, err === true ? false : err);
-
-      handlers?.onChangeText?.((value as any) as string);
+      h?.onChangeText?.((v as any) as string);
       setValues(newValues);
+
+      checkError(k, h, v, valuesRef.current);
+
       // prevent endless re-render if called on nested form
+      // TODO: not needed anymore probably test it out
       setTimeout(() => {
         onChangeRef?.current?.(newValues);
       }, 0);
     },
-    [setValues, onChangeRef, valuesRef, setError]
+    [setValues, onChangeRef, valuesRef, checkError]
   );
 
   const onSubmitRef = useLatest(options?.onSubmit);
@@ -309,6 +343,17 @@ export default function useFormState<T>(
       }
     );
 
+  const layout = <K extends keyof T>(
+    k: K,
+    h: Customizing<T, keyof T> | undefined
+  ): TextInputProps['onLayout'] =>
+    referencedCallback(`layout.${k}`, (e: LayoutChangeEvent) => {
+      h?.onLayout?.(e);
+      const values = valuesRef.current;
+      const value = values[k];
+      checkError(k, h, value, values);
+    });
+
   const text = <K extends keyof T>(
     k: K,
     h?: Customizing<T, keyof T>
@@ -318,6 +363,7 @@ export default function useFormState<T>(
     onChangeText: referencedCallback(`text.${k}`, (n: T[K]) =>
       changeValue(k, n, h)
     ),
+    onLayout: layout(k, h),
     onBlur: blur(k, h),
     value: (values?.[k] || '') as string,
   });
@@ -334,6 +380,7 @@ export default function useFormState<T>(
       }
     }),
     onBlur: blur(k, h),
+    onLayout: layout(k, h),
     value: `${(values?.[k] || '') as string}`,
   });
 

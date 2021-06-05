@@ -45,24 +45,26 @@ npm install react-native-use-form
 import * as React from 'react';
 
 import { View } from 'react-native';
-import { useFormState, Form } from 'react-native-use-form';
+import { useFormState, Form } from '../../src/index';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
 export default function App() {
   const [
-    { errors, values, submit, formProps, hasError },
-    { email, telephone },
+    { errors, submit, formProps, hasError },
+    { email, telephone, password },
   ] = useFormState(
     {
       email: '',
       telephone: '',
+      password: '',
     },
     {
       onChange: () => {
         // TODO: fix enum in backend
       },
-      onSubmit: (values) => {
-        alert('no errors we can submit');
+      onSubmit: () => {
+        console.log('no errors, submit!');
+        // alert('no errors we can submit');
       },
     }
   );
@@ -92,6 +94,7 @@ export default function App() {
           mode="outlined"
           {...telephone('telephone', {
             validate: (v) => {
+              console.log({ v });
               return looksLikeTelephone(v) ? true : 'Telephone is invalid';
             },
           })}
@@ -100,6 +103,20 @@ export default function App() {
         />
         <HelperText type="error" visible={hasError('telephone')}>
           {errors.telephone}
+        </HelperText>
+
+        <TextInput
+          mode="outlined"
+          {...password('password', {
+            required: true,
+            minLength: 3,
+            maxLength: 10,
+          })}
+          label="Wachtwoord"
+          error={hasError('password')}
+        />
+        <HelperText type="error" visible={hasError('password')}>
+          {errors.password}
         </HelperText>
         <Button mode="contained" onPress={submit}>
           Save
@@ -131,6 +148,7 @@ function looksLikeMail(str: string): boolean {
     str.length - lastDotPos > 2
   );
 }
+
 
 ```
 
