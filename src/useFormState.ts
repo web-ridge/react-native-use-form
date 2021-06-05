@@ -484,7 +484,11 @@ export default function useFormState<T>(
   };
 
   const hasError = <K extends keyof T>(k: K): boolean => {
-    return (touched[k] || wasSubmitted) && errors[k] !== false;
+    if (touched[k] || wasSubmitted) {
+      const noError = errors[k] === false || errors[k] === undefined;
+      return !noError;
+    }
+    return false;
   };
 
   return [

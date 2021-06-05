@@ -7,17 +7,19 @@ import { Button, HelperText, TextInput } from 'react-native-paper';
 export default function App() {
   const [
     { errors, submit, formProps, hasError },
-    { email, telephone },
+    { email, telephone, password },
   ] = useFormState(
     {
       email: '',
       telephone: '',
+      password: '',
     },
     {
       onChange: () => {
         // TODO: fix enum in backend
       },
       onSubmit: () => {
+        console.log('no errors, submit!');
         // alert('no errors we can submit');
       },
     }
@@ -58,6 +60,13 @@ export default function App() {
         <HelperText type="error" visible={hasError('telephone')}>
           {errors.telephone}
         </HelperText>
+
+        <TextInput
+          mode="outlined"
+          {...password('password')}
+          label="Wachtwoord"
+          error={hasError('password')}
+        />
         <Button mode="contained" onPress={submit}>
           Save
         </Button>
