@@ -45,7 +45,7 @@ npm install react-native-use-form
 import * as React from 'react';
 
 import { View } from 'react-native';
-import { useFormState, Form } from '../../src/index';
+import { useFormState, Form } from 'react-native-use-form';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
 export default function App() {
