@@ -309,7 +309,10 @@ export default function useFormState<T>(
         ...valuesRef.current,
       };
 
+      console.log(k);
       if ((k as string).includes('.')) {
+        console.log('HAS DOTS');
+        console.log('newValues: ', newValues);
         objectPath.set((newValues as unknown) as object, k as string, v);
       } else {
         newValues = {
@@ -317,6 +320,7 @@ export default function useFormState<T>(
           [k]: v,
         };
       }
+      console.log(newValues);
 
       h?.onChangeText?.((v as any) as string);
       setValues(newValues);
