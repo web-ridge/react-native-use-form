@@ -317,7 +317,6 @@ export default function useFormState<T>(
           [k]: v,
         };
       }
-      console.log(newValues);
 
       h?.onChangeText?.((v as any) as string);
       setValues(newValues);
