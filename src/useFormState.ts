@@ -9,7 +9,8 @@ import type {
 
 import { FormContext, FormContextType } from './FormContext';
 import { useLatest, useReferencedCallback } from './utils';
-import { set } from 'lodash';
+
+import objectPath from 'object-path';
 
 type FormTextInputProps = {
   testID: string;
@@ -306,11 +307,10 @@ export default function useFormState<T>(
     ) => {
       let newValues = {
         ...valuesRef.current,
-        [k]: v,
       };
 
       if ((k as string).includes('.')) {
-        set(newValues, k, v);
+        objectPath.set((newValues as unknown) as object, k as string, v);
       } else {
         newValues = {
           ...valuesRef.current,
