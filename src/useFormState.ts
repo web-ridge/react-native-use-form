@@ -9,6 +9,7 @@ import type {
 
 import { FormContext, FormContextType } from './FormContext';
 import { useLatest, useReferencedCallback } from './utils';
+import { set } from 'lodash'
 
 type FormTextInputProps = {
   testID: string;
@@ -304,10 +305,20 @@ export default function useFormState<T>(
       v: T[K],
       h: Customizing<T, keyof T> | undefined
     ) => {
-      const newValues = {
+      let newValues = {
         ...valuesRef.current,
         [k]: v,
       };
+      
+      if (k.includes('.')) {
+        set(newValues, k, v)
+      } else {
+        newValues = {
+          ...valuesRef.current,
+          [k]: v,
+        };
+      }
+      
       h?.onChangeText?.((v as any) as string);
       setValues(newValues);
 
