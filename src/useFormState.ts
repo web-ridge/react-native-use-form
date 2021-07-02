@@ -398,7 +398,7 @@ export default function useFormState<T>(
     }),
     onBlur: blur(k, h),
     onLayout: layout(k, h),
-    value: `${(values?.[k] || '') as string}`,
+    value: `${objectPath.get(values as any, k as string)}`,
   });
 
   const number = <K extends keyof T>(
@@ -529,7 +529,7 @@ export default function useFormState<T>(
       setTouched(k, true);
       changeValue(k, n, h as any);
     }),
-    value: values?.[k] as T[K],
+    value: objectPath.get(values as any, k as string) as T[K],
   });
 
   const setField = <K extends keyof T>(k: K, v: T[K]) => {
