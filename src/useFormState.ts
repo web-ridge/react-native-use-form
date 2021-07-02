@@ -382,7 +382,7 @@ export default function useFormState<T>(
     ),
     onLayout: layout(k, h),
     onBlur: blur(k, h),
-    value: (values?.[k] || '') as string,
+    value: objectPath.get(values as any, k as string),
   });
 
   const numberRaw = <K extends keyof T>(
