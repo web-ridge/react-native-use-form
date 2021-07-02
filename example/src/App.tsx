@@ -6,13 +6,16 @@ import { Button, HelperText, TextInput } from 'react-native-paper';
 
 export default function App() {
   const [
-    { errors, submit, formProps, hasError },
+    { errors, submit, formProps, hasError, setField },
     { email, telephone, password },
   ] = useFormState(
     {
       email: '',
       telephone: '',
       password: '',
+      nested: {
+        objectProperty: '',
+      },
     },
     {
       onChange: () => {
@@ -24,6 +27,7 @@ export default function App() {
       },
     }
   );
+
   return (
     <View
       style={{
@@ -37,7 +41,7 @@ export default function App() {
           mode="outlined"
           error={hasError('email')}
           {...email('email', {
-            validate: (v) => {
+            validate: (v: any) => {
               return looksLikeMail(v) ? true : 'Email-address is invalid';
             },
           })}
@@ -49,8 +53,7 @@ export default function App() {
         <TextInput
           mode="outlined"
           {...telephone('telephone', {
-            validate: (v) => {
-              console.log({ v });
+            validate: (v: any) => {
               return looksLikeTelephone(v) ? true : 'Telephone is invalid';
             },
           })}
@@ -74,6 +77,15 @@ export default function App() {
         <HelperText type="error" visible={hasError('password')}>
           {errors.password}
         </HelperText>
+        <TextInput
+          mode="outlined"
+          error={hasError('nested.objectProperty' as any)}
+          label="Nested objectProperty"
+          onChange={(e: any) => {
+            const value = e.target.value;
+            setField('nested.objectProperty' as any, value);
+          }}
+        />
         <Button mode="contained" onPress={submit}>
           Save
         </Button>

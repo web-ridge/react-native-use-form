@@ -309,10 +309,7 @@ export default function useFormState<T>(
         ...valuesRef.current,
       };
 
-      console.log(k);
       if ((k as string).includes('.')) {
-        console.log('HAS DOTS');
-        console.log('newValues: ', newValues);
         objectPath.set((newValues as unknown) as object, k as string, v);
       } else {
         newValues = {
@@ -551,8 +548,13 @@ export default function useFormState<T>(
   };
 
   const hasError = <K extends keyof T>(k: K): boolean => {
-    if (touched[k] || wasSubmitted) {
-      const noError = errors[k] === false || errors[k] === undefined;
+    let realKey = k;
+    if ((k as string).includes('.')) {
+      realKey = objectPath.get(values as any, k as string);
+    }
+    if (touched[realKey] || wasSubmitted) {
+      const noError =
+        errors[realKey] === false || errors[realKey] === undefined;
       return !noError;
     }
     return false;
