@@ -279,6 +279,7 @@ export default function useFormState<T>(
       v: T[K],
       allV: T
     ) => {
+      console.log({k,h,v,allV});
       let err: boolean | string | undefined;
 
       if (h) {
