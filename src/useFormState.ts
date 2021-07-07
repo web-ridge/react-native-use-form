@@ -279,7 +279,6 @@ export default function useFormState<T>(
       v: T[K],
       allV: T
     ) => {
-      console.log({k,h,v,allV});
       let err: boolean | string | undefined;
 
       if (h) {
@@ -309,7 +308,6 @@ export default function useFormState<T>(
       let newValues = {
         ...valuesRef.current,
       };
-
       if ((k as string).includes('.')) {
         objectPath.set((newValues as unknown) as object, k as string, v);
       } else {
@@ -549,9 +547,6 @@ export default function useFormState<T>(
 
   const hasError = <K extends keyof T>(k: K): boolean => {
     let realKey = k;
-    if ((k as string).includes('.')) {
-      realKey = objectPath.get(values as any, k as string);
-    }
     if (touched[realKey] || wasSubmitted) {
       const noError =
         errors[realKey] === false || errors[realKey] === undefined;
