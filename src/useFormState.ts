@@ -1,10 +1,11 @@
 import * as React from 'react';
-import type {
+import {
   LayoutChangeEvent,
   NativeSyntheticEvent,
   TextInput,
   TextInputFocusEventData,
   TextInputProps,
+  Platform,
 } from 'react-native';
 
 import { FormContext, FormContextType } from './FormContext';
@@ -61,6 +62,9 @@ type FieldsBoolean<T> = {
 type FieldsError<T> = {
   [key in keyof T]?: boolean | string | undefined;
 };
+type FieldsLastCharacters<T> = {
+  [key in keyof T]?: string | undefined;
+};
 
 type ReferencerReturns = TextInputProps & { ref: React.Ref<TextInput> };
 export type ReferencerType = (
@@ -84,6 +88,10 @@ export function indexer(): IndexerType {
     add,
     i,
   };
+}
+
+function withoutLastCharacter(s: string) {
+  return s.substring(0, s.length - 1);
 }
 
 export function useFormContext(): FormContextType & {
@@ -248,6 +256,9 @@ export default function useFormState<T>(
   const [touched, sTouched] = React.useState<FieldsBoolean<T>>({});
   const [errors, sErrors] = React.useState<FieldsError<T>>({});
   const [values, setValues] = React.useState<T>(initialState);
+  const [lastCharacters, setLastCharacters] = React.useState<
+    FieldsLastCharacters<T>
+  >({});
 
   const valuesRef = useLatest(values);
   const onChangeRef = useLatest(options?.onChange);
@@ -272,11 +283,12 @@ export default function useFormState<T>(
       v: T[K],
       allV: T
     ) => {
-      let err: boolean | string | undefined = undefined;
+      let err: boolean | string | undefined;
 
       if (h) {
         err = h.validate?.(v, allV);
         if (!err) {
+          // TODO: add locale support
           if (h?.required === true && !v) {
             err = `${k} is required`;
           } else if (h.minLength !== undefined && `${v}`.length < h.minLength) {
@@ -375,13 +387,27 @@ export default function useFormState<T>(
     ...ctx.referencer(k as any, ctx.formIndex),
     testID: k as string,
     onChangeText: referencedCallback(`number.${k}`, (n: string) => {
-      if (n !== '') {
-        changeValue(k, Number(n) as any, h);
+      const endsWithSeparator = n.endsWith(',') || n.endsWith('.');
+
+      if (endsWithSeparator) {
+        setLastCharacters((prev) => ({ ...prev, [k]: n[n.length - 1] }));
+      } else {
+        setLastCharacters((prev) => ({ ...prev, [k]: undefined }));
+      }
+
+      if (n === '') {
+        changeValue(k, null as any, h);
+      } else {
+        changeValue(
+          k,
+          Number(endsWithSeparator ? withoutLastCharacter(n) : n) as any,
+          h
+        );
       }
     }),
     onBlur: blur(k, h),
     onLayout: layout(k, h),
-    value: `${(values?.[k] || '') as string}`,
+    value: `${(values?.[k] || '') as string}${lastCharacters[k] || ''}`,
   });
 
   const number = <K extends keyof T>(
@@ -477,7 +503,7 @@ export default function useFormState<T>(
     autoCompleteType: 'username',
     autoCapitalize: 'none',
     autoCorrect: false,
-    selectTextOnFocus: true,
+    selectTextOnFocus: Platform.OS !== 'web',
   });
 
   const password = <K extends keyof T>(
@@ -489,7 +515,7 @@ export default function useFormState<T>(
     autoCompleteType: 'password',
     secureTextEntry: true,
     autoCorrect: false,
-    selectTextOnFocus: true,
+    selectTextOnFocus: Platform.OS !== 'web',
   });
 
   const email = <K extends keyof T>(

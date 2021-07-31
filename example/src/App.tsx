@@ -4,15 +4,24 @@ import { View } from 'react-native';
 import { useFormState, Form } from '../../src/index';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
+type FormType = {
+  email: string;
+  telephone: string;
+  password: string;
+  age: number | undefined;
+  money: number | undefined;
+};
 export default function App() {
   const [
-    { errors, submit, formProps, hasError },
-    { email, telephone, password },
-  ] = useFormState(
+    { values, errors, submit, formProps, hasError },
+    fh,
+  ] = useFormState<FormType>(
     {
       email: '',
       telephone: '',
       password: '',
+      age: 0,
+      money: 0,
     },
     {
       onChange: () => {
@@ -24,20 +33,25 @@ export default function App() {
       },
     }
   );
+
+  console.log({ values });
   return (
     <View
       style={{
         flex: 1,
-        maxWidth: 500,
-        alignSelf: 'center',
+        marginTop: 100,
+        marginLeft: 12,
+        marginRight: 12,
+        // alignSelf: 'center',
       }}
     >
       <Form {...formProps}>
         <TextInput
           mode="outlined"
           error={hasError('email')}
-          {...email('email', {
+          {...fh.email('email', {
             validate: (v) => {
+              //@ts-ignore
               return looksLikeMail(v) ? true : 'Email-address is invalid';
             },
           })}
@@ -48,13 +62,14 @@ export default function App() {
         </HelperText>
         <TextInput
           mode="outlined"
-          {...telephone('telephone', {
+          {...fh.telephone('telephone', {
             validate: (v) => {
               console.log({ v });
+              //@ts-ignore
               return looksLikeTelephone(v) ? true : 'Telephone is invalid';
             },
           })}
-          label="Telefoon"
+          label="Telephone"
           error={hasError('telephone')}
         />
         <HelperText type="error" visible={hasError('telephone')}>
@@ -63,18 +78,39 @@ export default function App() {
 
         <TextInput
           mode="outlined"
-          {...password('password', {
+          {...fh.password('password', {
             required: true,
             minLength: 3,
             maxLength: 10,
           })}
-          label="Wachtwoord"
+          label="Password"
           error={hasError('password')}
         />
         <HelperText type="error" visible={hasError('password')}>
           {errors.password}
         </HelperText>
-        <Button mode="contained" onPress={submit}>
+
+        <TextInput
+          mode="outlined"
+          {...fh.number('age', {
+            required: true,
+            minLength: 3,
+            maxLength: 10,
+          })}
+          label="Age"
+          error={hasError('password')}
+        />
+        <TextInput
+          mode="outlined"
+          {...fh.decimal('money', {
+            required: true,
+            minLength: 3,
+            maxLength: 10,
+          })}
+          label="Money bank account"
+          error={hasError('password')}
+        />
+        <Button mode="contained" onPress={submit} style={{ marginTop: 24 }}>
           Save
         </Button>
       </Form>
