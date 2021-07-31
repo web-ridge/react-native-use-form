@@ -224,7 +224,7 @@ export default function useFormState<T>(
     setError: <K extends keyof T>(
       key: K,
       value: boolean | string | undefined
-    ) => void; 
+    ) => void;
     clearErrors: () => void;
     submit: () => void;
     formProps: {
@@ -276,8 +276,7 @@ export default function useFormState<T>(
     },
     [errorsRef, sErrors]
   );
-  
-  
+
   const clearErrors = React.useCallback(() => {
     sErrors({});
   }, []);
