@@ -366,9 +366,9 @@ export default function useFormState<T>(
   ): TextInputProps['onLayout'] =>
     referencedCallback(`layout.${k}`, (e: LayoutChangeEvent) => {
       h?.onLayout?.(e);
-      const values = valuesRef.current;
-      const value = values[k];
-      checkError(k, h, value, values);
+      const vv = valuesRef.current;
+      const value = vv[k];
+      checkError(k, h, value, vv);
     });
 
   const text = <K extends keyof T>(
