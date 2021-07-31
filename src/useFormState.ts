@@ -27,8 +27,17 @@ type FormTextInputProps = {
 };
 
 type FormRawProps<V> = {
+  testID: string;
   value: V;
   onChange: (v: V) => void;
+};
+
+type FormRawValidateProps<V> = {
+  testID: string;
+  value: V;
+  onChange: (v: V) => void;
+  onBlur: TextInputProps['onBlur'];
+  onLayout: TextInputProps['onLayout'];
 };
 
 type Customizing<T, Key extends keyof T> = {
@@ -43,13 +52,20 @@ type Customizing<T, Key extends keyof T> = {
 };
 
 type CustomizingRaw<V, T> = {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
   validate?: (v: V, values: T) => void;
+  onBlur?: TextInputProps['onBlur'];
+  onLayout?: TextInputProps['onLayout'];
 };
 
-type FormRawType<T> = <K extends keyof T>(
+type FormRawType<T> = <K extends keyof T>(key: K) => FormRawProps<T[K]>;
+
+type FormRawWithValidateType<T> = <K extends keyof T>(
   key: K,
   handlers?: CustomizingRaw<T[K], T>
-) => FormRawProps<T[K]>;
+) => FormRawValidateProps<T[K]>;
 
 type FormTextType<T> = (
   key: keyof T,
@@ -239,7 +255,6 @@ export default function useFormState<T>(
     decimal: FormTextType<T>;
     number: FormTextType<T>;
     text: FormTextType<T>;
-
     username: FormTextType<T>;
     password: FormTextType<T>;
     email: FormTextType<T>;
@@ -249,6 +264,7 @@ export default function useFormState<T>(
     name: FormTextType<T>;
     city: FormTextType<T>;
     raw: FormRawType<T>;
+    rawWithValidate: FormRawWithValidateType<T>;
   }
 ] {
   const referencedCallback = useReferencedCallback();
@@ -535,15 +551,27 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
-  const raw = <K extends keyof T>(
+  const raw = <K extends keyof T>(k: K): FormRawProps<T[K]> => ({
+    testID: k as string,
+    onChange: referencedCallback(`raw.${k}`, (n: T[K]) => {
+      setTouched(k, true);
+      changeValue(k, n, undefined);
+    }),
+    value: values?.[k] as T[K],
+  });
+
+  const rawWithValidate = <K extends keyof T>(
     k: K,
     h?: CustomizingRaw<T[K], T>
-  ): FormRawProps<T[K]> => ({
+  ): FormRawValidateProps<T[K]> => ({
+    testID: k as string,
     onChange: referencedCallback(`raw.${k}`, (n: T[K]) => {
       setTouched(k, true);
       changeValue(k, n, h as any);
     }),
     value: values?.[k] as T[K],
+    onLayout: layout(k, h as any),
+    onBlur: blur(k, h as any),
   });
 
   const setField = <K extends keyof T>(k: K, v: T[K]) => {
@@ -592,6 +620,7 @@ export default function useFormState<T>(
       password,
       email,
       raw,
+      rawWithValidate,
       postalCode,
       streetAddress,
       name,
