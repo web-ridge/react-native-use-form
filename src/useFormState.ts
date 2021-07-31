@@ -224,7 +224,8 @@ export default function useFormState<T>(
     setError: <K extends keyof T>(
       key: K,
       value: boolean | string | undefined
-    ) => void;
+    ) => void; 
+    clearErrors: () => void;
     submit: () => void;
     formProps: {
       indexer: IndexerType;
@@ -275,6 +276,11 @@ export default function useFormState<T>(
     },
     [errorsRef, sErrors]
   );
+  
+  
+  const clearErrors = React.useCallback(() => {
+    sErrors({});
+  }, []);
 
   const checkError = React.useCallback(
     <K extends keyof T>(
@@ -575,6 +581,7 @@ export default function useFormState<T>(
       submit,
       formProps: { referencer: ctx.referencer, indexer: ctx.indexer },
       hasError,
+      clearErrors,
     },
     {
       text,
