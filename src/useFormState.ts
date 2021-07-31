@@ -30,12 +30,6 @@ type FormRawProps<V> = {
   testID: string;
   value: V;
   onChange: (v: V) => void;
-};
-
-type FormRawValidateProps<V> = {
-  testID: string;
-  value: V;
-  onChange: (v: V) => void;
   onBlur: TextInputProps['onBlur'];
   onLayout: TextInputProps['onLayout'];
 };
@@ -60,12 +54,10 @@ type CustomizingRaw<V, T> = {
   onLayout?: TextInputProps['onLayout'];
 };
 
-type FormRawType<T> = <K extends keyof T>(key: K) => FormRawProps<T[K]>;
-
-type FormRawWithValidateType<T> = <K extends keyof T>(
+type FormRawType<T> = <K extends keyof T>(
   key: K,
   handlers?: CustomizingRaw<T[K], T>
-) => FormRawValidateProps<T[K]>;
+) => FormRawProps<T[K]>;
 
 type FormTextType<T> = (
   key: keyof T,
@@ -264,7 +256,6 @@ export default function useFormState<T>(
     name: FormTextType<T>;
     city: FormTextType<T>;
     raw: FormRawType<T>;
-    rawWithValidate: FormRawWithValidateType<T>;
   }
 ] {
   const referencedCallback = useReferencedCallback();
@@ -551,19 +542,10 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
-  const raw = <K extends keyof T>(k: K): FormRawProps<T[K]> => ({
-    testID: k as string,
-    onChange: referencedCallback(`raw.${k}`, (n: T[K]) => {
-      setTouched(k, true);
-      changeValue(k, n, undefined);
-    }),
-    value: values?.[k] as T[K],
-  });
-
-  const rawWithValidate = <K extends keyof T>(
+  const raw = <K extends keyof T>(
     k: K,
     h?: CustomizingRaw<T[K], T>
-  ): FormRawValidateProps<T[K]> => ({
+  ): FormRawProps<T[K]> => ({
     testID: k as string,
     onChange: referencedCallback(`raw.${k}`, (n: T[K]) => {
       setTouched(k, true);
@@ -620,7 +602,6 @@ export default function useFormState<T>(
       password,
       email,
       raw,
-      rawWithValidate,
       postalCode,
       streetAddress,
       name,
