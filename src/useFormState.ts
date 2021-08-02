@@ -299,20 +299,21 @@ export default function useFormState<T>(
       let err: boolean | string | undefined;
 
       if (h) {
-        err = h.validate?.(v, allV);
-        if (!err) {
-          // TODO: add locale support
-          if (h?.required === true && !v) {
-            err = `${k} is required`;
-          } else if (h.minLength !== undefined && `${v}`.length < h.minLength) {
-            err = `${k} should be more than ${h.minLength}`;
-          } else if (h.maxLength !== undefined && `${v}`.length > h.maxLength) {
-            err = `${k} should be less than ${h.maxLength}`;
-          }
+        // TODO: add locale support
+        if (h?.required === true && !v) {
+          err = `${k} is required`;
+        } else if (h.minLength !== undefined && `${v}`.length < h.minLength) {
+          err = `${k} should be more than ${h.minLength}`;
+        } else if (h.maxLength !== undefined && `${v}`.length > h.maxLength) {
+          err = `${k} should be less than ${h.maxLength}`;
+        } else if (h.validate) {
+          err = h.validate?.(v, allV);
         }
       }
-
-      setError(k, err === true ? false : err);
+      setError(
+        k,
+        err === true || err === undefined || err === null ? false : err
+      );
     },
     [setError]
   );
