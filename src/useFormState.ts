@@ -38,8 +38,8 @@ type Customizing<T, Key extends keyof T> = {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
-
   validate?: (v: T[Key], values: T) => boolean | string | undefined;
+  enhance?: (v: T[Key], values: T) => T[Key];
   onChangeText?: TextInputProps['onChangeText'];
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
@@ -49,6 +49,7 @@ type CustomizingRaw<V, T> = {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
+  enhance?: (v: V, values: T) => V;
   validate?: (v: V, values: T) => void;
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
@@ -322,14 +323,16 @@ export default function useFormState<T>(
       v: T[K],
       h: Customizing<T, keyof T> | undefined
     ) => {
+      let enhancedV = h?.enhance ? h?.enhance(v, valuesRef.current) : v;
       const newValues = {
         ...valuesRef.current,
-        [k]: v,
+        [k]: enhancedV,
       };
-      h?.onChangeText?.((v as any) as string);
-      setValues(newValues);
 
-      checkError(k, h, v, valuesRef.current);
+      setValues(newValues);
+      checkError(k, h, enhancedV, valuesRef.current);
+
+      h?.onChangeText?.((enhancedV as any) as string);
 
       // prevent endless re-render if called on nested form
       // TODO: not needed anymore probably test it out

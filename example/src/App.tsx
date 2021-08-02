@@ -10,6 +10,7 @@ type FormType = {
   password: string;
   age: number | undefined;
   money: number | undefined;
+  postalCode: string | undefined;
 };
 export default function App() {
   const [
@@ -22,6 +23,7 @@ export default function App() {
       password: '',
       age: 0,
       money: 0,
+      postalCode: '',
     },
     {
       onChange: () => {
@@ -71,6 +73,21 @@ export default function App() {
           })}
           label="Telephone"
           error={hasError('telephone')}
+        />
+        <TextInput
+          mode="outlined"
+          {...fh.text('postalCode', {
+            enhance: (v) => {
+              return (v as string)?.toUpperCase();
+            },
+            validate: (v) => {
+              console.log({ v });
+              //@ts-ignore
+              return looksLikeTelephone(v) ? true : 'Telephone is invalid';
+            },
+          })}
+          label="Postalcode"
+          error={hasError('postalCode')}
         />
         <HelperText type="error" visible={hasError('telephone')}>
           {errors.telephone}
