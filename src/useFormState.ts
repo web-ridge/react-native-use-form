@@ -214,6 +214,7 @@ export default function useFormState<T>(
     errors: FieldsError<T>;
     touched: FieldsBoolean<T>;
     setField: <K extends keyof T>(key: K, value: T[K]) => void;
+    setValues: (values: T) => void;
     setTouched: <K extends keyof T>(key: K, value: boolean) => void;
     setError: <K extends keyof T>(
       key: K,
@@ -250,7 +251,7 @@ export default function useFormState<T>(
   const [wasSubmitted, setWasSubmitted] = React.useState<boolean>(false);
   const [touched, sTouched] = React.useState<FieldsBoolean<T>>({});
   const [errors, sErrors] = React.useState<FieldsError<T>>({});
-  const [values, setValues] = React.useState<T>(initialState);
+  const [values, innerSetValues] = React.useState<T>(initialState);
 
   const valuesRef = useLatest(values);
   const onChangeRef = useLatest(options?.onChange);
@@ -318,7 +319,7 @@ export default function useFormState<T>(
       }
 
       h?.onChangeText?.((v as any) as string);
-      setValues(newValues);
+      innerSetValues(newValues);
 
       checkError(k, h, v, valuesRef.current);
 
@@ -328,7 +329,7 @@ export default function useFormState<T>(
         onChangeRef?.current?.(newValues);
       }, 0);
     },
-    [setValues, onChangeRef, valuesRef, checkError]
+    [innerSetValues, onChangeRef, valuesRef, checkError]
   );
 
   const onSubmitRef = useLatest(options?.onSubmit);
@@ -536,6 +537,12 @@ export default function useFormState<T>(
     }
   };
 
+  const setValues = (v: T) => {
+    if (v !== values) {
+      innerSetValues(v);
+    }
+  };
+
   const setTouched = <K extends keyof T>(k: K, v: boolean) => {
     if (v !== touched[k]) {
       sTouched((p) => ({
@@ -561,6 +568,7 @@ export default function useFormState<T>(
       errors,
       touched,
       setField,
+      setValues,
       setError,
       setTouched,
       submit,
