@@ -192,7 +192,7 @@ export function useInnerContext(skip?: boolean) {
               });
 
               nextField?.element?.focus?.();
-              currentField.blur();
+              currentField?.blur();
             }),
       blurOnSubmit: lastKey === key,
       returnKeyType: lastKey === key ? undefined : 'next',
