@@ -401,7 +401,6 @@ export default function useFormState<T>(
     onChangeText: referencedCallback(`number.${k}`, (n: string) => {
       // support numbers like 0,02
       const { lastPart, hasLastPart, firstPart } = splitNumberStringInParts(n);
-      console.log({ hasLastPart, firstPart, lastPart });
       if (hasLastPart) {
         setLastCharacters((prev) => ({ ...prev, [k]: lastPart }));
       } else {
@@ -411,8 +410,6 @@ export default function useFormState<T>(
       if (n === '') {
         changeValue(k, null as any, h);
       } else {
-        // const nNumber = Number(n) as any;
-
         changeValue(k, Number(firstPart) as any, h);
       }
     }),
