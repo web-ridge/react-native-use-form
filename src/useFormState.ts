@@ -99,10 +99,6 @@ export function indexer(): IndexerType {
   };
 }
 
-function withoutLastCharacter(s: string) {
-  return s.substring(0, s.length - 1);
-}
-
 export function useFormContext(): FormContextType & {
   formIndex: number;
 } {
@@ -403,10 +399,11 @@ export default function useFormState<T>(
     ...ctx.referencer(k as any, ctx.formIndex),
     testID: k as string,
     onChangeText: referencedCallback(`number.${k}`, (n: string) => {
-      const endsWithSeparator = n.endsWith(',') || n.endsWith('.');
-
-      if (endsWithSeparator) {
-        setLastCharacters((prev) => ({ ...prev, [k]: n[n.length - 1] }));
+      // support numbers like 0,02
+      const { lastPart, hasLastPart, firstPart } = splitNumberStringInParts(n);
+      console.log({ hasLastPart, firstPart, lastPart });
+      if (hasLastPart) {
+        setLastCharacters((prev) => ({ ...prev, [k]: lastPart }));
       } else {
         setLastCharacters((prev) => ({ ...prev, [k]: undefined }));
       }
@@ -414,11 +411,9 @@ export default function useFormState<T>(
       if (n === '') {
         changeValue(k, null as any, h);
       } else {
-        changeValue(
-          k,
-          Number(endsWithSeparator ? withoutLastCharacter(n) : n) as any,
-          h
-        );
+        // const nNumber = Number(n) as any;
+
+        changeValue(k, Number(firstPart) as any, h);
       }
     }),
     onBlur: blur(k, h),
@@ -614,3 +609,40 @@ export default function useFormState<T>(
     },
   ];
 }
+
+function splitNumberStringInParts(str: string) {
+  const lastCommaIndex = str.lastIndexOf(',');
+  const lastDotIndex = str.lastIndexOf('.');
+
+  const endsWithComma = str.endsWith(',');
+  const endsWithDot = str.endsWith('.');
+  const endsWithZero = str.endsWith('0');
+
+  const maxCommaOrDotIndex = Math.max(lastCommaIndex, lastDotIndex);
+
+  if (
+    endsWithComma ||
+    endsWithDot ||
+    (maxCommaOrDotIndex > 0 && endsWithZero)
+  ) {
+    return {
+      firstPart: str.slice(0, maxCommaOrDotIndex),
+      lastPart: str.slice(maxCommaOrDotIndex, str.length),
+      hasLastPart: true,
+    };
+  }
+
+  return {
+    firstPart: str,
+    lastPart: '',
+    hasLastPart: false,
+  };
+}
+
+// function reverse(str: string) {
+//   let reversed = '';
+//   for (let character of str) {
+//     reversed = character + reversed;
+//   }
+//   return reversed;
+// }
