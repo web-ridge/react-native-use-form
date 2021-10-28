@@ -314,9 +314,9 @@ export default function useFormState<T>(
         if (h?.required === true && !v) {
           err = `${k} is required`;
         } else if (h.minLength !== undefined && `${v}`.length < h.minLength) {
-          err = `${k} should be more than ${h.minLength}`;
+          err = `${k} length should be longer than ${h.minLength}`;
         } else if (h.maxLength !== undefined && `${v}`.length > h.maxLength) {
-          err = `${k} should be less than ${h.maxLength}`;
+          err = `${k} length should be less than ${h.maxLength}`;
         } else if (h.validate) {
           err = h.validate?.(v, allV);
         }
@@ -407,7 +407,11 @@ export default function useFormState<T>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => {
-    const value = `${values?.[k] || ''}`.replace('.', separationCharacter);
+    const value = `${deepGet(values, k) || ''}`.replace(
+      '.',
+      separationCharacter
+    );
+
     return {
       ...ctx.referencer(k, ctx.formIndex),
       testID: k,
@@ -416,10 +420,11 @@ export default function useFormState<T>(
         const { lastPart, hasLastPart, firstPart } = splitNumberStringInParts(
           n
         );
+
         if (hasLastPart) {
-          setLastCharacters((prev) => ({ ...prev, [k]: lastPart }));
+          setLastCharacters((prev) => deepSet(prev, k, lastPart) as any);
         } else {
-          setLastCharacters((prev) => ({ ...prev, [k]: undefined }));
+          setLastCharacters((prev) => deepSet(prev, k, undefined) as any);
         }
 
         if (n === '') {
@@ -431,7 +436,7 @@ export default function useFormState<T>(
       }),
       onBlur: blur(k, h),
       onLayout: layout(k, h),
-      value: `${deepGet(value, k) || ''}${deepGet(lastCharacters, k) || ''}`,
+      value: `${value || ''}${deepGet(lastCharacters, k) || ''}`,
     };
   };
 
@@ -573,13 +578,13 @@ export default function useFormState<T>(
     k: K,
     v: GetFieldType<T, K>
   ) => {
-    if (v !== values[k]) {
+    if (v !== deepGet(values, k)) {
       changeValue(k, v, undefined);
     }
   };
 
   const setTouched = <K extends DotNestedKeys<T>>(k: K, v: boolean) => {
-    if (v !== touched[k]) {
+    if (v !== deepGet(touched, k)) {
       sTouched((p) => deepSet(p, k, v) as any);
     }
   };

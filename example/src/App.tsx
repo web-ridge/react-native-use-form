@@ -91,17 +91,17 @@ export default function App() {
             enhance: (v) => {
               return (v || '').toUpperCase();
             },
-            validate: (v) => {
-              return looksLikeTelephone(v || '')
-                ? true
-                : 'Telephone is invalid';
-            },
+            // validate: (v) => {
+            //   return looksLikeTelephone(v || '')
+            //     ? true
+            //     : 'Telephone is invalid';
+            // },
           })}
           label="Postalcode"
           error={hasError('postalCode')}
         />
         <HelperText type="error" visible={hasError('telephone')}>
-          {errors.telephone}
+          {errors.postalCode}
         </HelperText>
 
         <TextInput
@@ -158,7 +158,7 @@ export default function App() {
         </HelperText>
         <TextInput
           mode="outlined"
-          {...fh.text('organization.revenue', {
+          {...fh.number('organization.revenue', {
             required: true,
             minLength: 3,
             maxLength: 10,
