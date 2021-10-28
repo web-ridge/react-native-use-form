@@ -10,6 +10,13 @@ import {
 
 import { FormContext, FormContextType } from './FormContext';
 import { useLatest, useReferencedCallback } from './utils';
+import { deepSet, deepGet } from './objectPath';
+import type {
+  ErrorUtility,
+  DotNestedKeys,
+  GetFieldType,
+  TouchedUtility,
+} from './types';
 
 type FormTextInputProps = {
   testID: string;
@@ -34,12 +41,12 @@ type FormRawProps<V> = {
   onLayout: TextInputProps['onLayout'];
 };
 
-type Customizing<T, Key extends keyof T> = {
+type Customizing<T, K extends DotNestedKeys<T>> = {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
-  validate?: (v: T[Key], values: T) => boolean | string | undefined;
-  enhance?: (v: T[Key], values: T) => T[Key];
+  validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
+  enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
   onChangeText?: TextInputProps['onChangeText'];
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
@@ -55,22 +62,16 @@ type CustomizingRaw<V, T> = {
   onLayout?: TextInputProps['onLayout'];
 };
 
-type FormRawType<T> = <K extends keyof T>(
+type FormRawType<T> = <K extends DotNestedKeys<T>>(
   key: K,
-  handlers?: CustomizingRaw<T[K], T>
-) => FormRawProps<T[K]>;
+  handlers?: CustomizingRaw<GetFieldType<T, K>, T>
+) => FormRawProps<GetFieldType<T, K>>;
 
-type FormTextType<T> = <K extends keyof T>(
+type FormTextType<T> = <K extends DotNestedKeys<T>>(
   key: K,
   handlers?: Customizing<T, K>
 ) => FormTextInputProps;
 
-type FieldsBoolean<T> = {
-  [key in keyof T]?: boolean;
-};
-type FieldsError<T> = {
-  [key in keyof T]?: boolean | string | undefined;
-};
 type FieldsLastCharacters<T> = {
   [key in keyof T]?: string | undefined;
 };
@@ -222,11 +223,14 @@ export default function useFormState<T>(
 ): [
   {
     values: T;
-    errors: FieldsError<T>;
-    touched: FieldsBoolean<T>;
-    setField: <K extends keyof T>(key: K, value: T[K]) => void;
-    setTouched: <K extends keyof T>(key: K, value: boolean) => void;
-    setError: <K extends keyof T>(
+    errors: ErrorUtility<T>;
+    touched: TouchedUtility<T>;
+    setField: <K extends DotNestedKeys<T>>(
+      key: K,
+      value: GetFieldType<T, K>
+    ) => void;
+    setTouched: <K extends DotNestedKeys<T>>(key: K, value: boolean) => void;
+    setError: <K extends DotNestedKeys<T>>(
       key: K,
       value: boolean | string | undefined
     ) => void;
@@ -236,7 +240,7 @@ export default function useFormState<T>(
       indexer: IndexerType;
       referencer: ReferencerType;
     };
-    hasError: <K extends keyof T>(key: K) => boolean;
+    hasError: <K extends DotNestedKeys<T>>(key: K) => boolean;
   },
   {
     decimalText: FormTextType<T>;
@@ -255,17 +259,24 @@ export default function useFormState<T>(
     raw: FormRawType<T>;
   }
 ] {
-  const seperationCharacter = React.useMemo(() => {
-    const formatter = new Intl.NumberFormat();
-    const formatted = formatter.format(1.1);
-    return formatted === '1,10' ? ',' : '.';
+  const separationCharacter = React.useMemo(() => {
+    const hasIntlSupport = typeof Intl !== undefined;
+    if (hasIntlSupport) {
+      const formatter = new Intl.NumberFormat();
+      const formatted = formatter.format(1.1);
+      return formatted === '1,10' ? ',' : '.';
+    }
+    console.warn(
+      '[react-native-use-form] please upgrade React Native to provide Intl support'
+    );
+    return '.';
   }, []);
 
   const referencedCallback = useReferencedCallback();
   const ctx = useFormContext();
   const [wasSubmitted, setWasSubmitted] = React.useState<boolean>(false);
-  const [touched, sTouched] = React.useState<FieldsBoolean<T>>({});
-  const [errors, sErrors] = React.useState<FieldsError<T>>({});
+  const [touched, sTouched] = React.useState<TouchedUtility<T>>({});
+  const [errors, sErrors] = React.useState<ErrorUtility<T>>({});
   const [values, setValues] = React.useState<T>(initialState);
   const [lastCharacters, setLastCharacters] = React.useState<
     FieldsLastCharacters<T>
@@ -276,12 +287,10 @@ export default function useFormState<T>(
   const errorsRef = useLatest(errors);
 
   const setError = React.useCallback(
-    <K extends keyof T>(k: K, v: boolean | string | undefined) => {
-      if (v !== errorsRef.current[k]) {
-        sErrors((prev) => ({
-          ...prev,
-          [k]: v,
-        }));
+    <K extends DotNestedKeys<T>>(k: K, v: boolean | string | undefined) => {
+      const error = deepGet(errorsRef.current, k);
+      if (v !== error) {
+        sErrors((prev) => deepSet(prev, k, v) as any);
       }
     },
     [errorsRef, sErrors]
@@ -292,10 +301,10 @@ export default function useFormState<T>(
   }, []);
 
   const checkError = React.useCallback(
-    <K extends keyof T>(
+    <K extends DotNestedKeys<T>>(
       k: K,
       h: Customizing<T, K> | undefined,
-      v: T[K],
+      v: GetFieldType<T, K>,
       allV: T
     ) => {
       let err: boolean | string | undefined;
@@ -321,13 +330,14 @@ export default function useFormState<T>(
   );
 
   const changeValue = React.useCallback(
-    <K extends keyof T>(k: K, v: T[K], h: Customizing<T, K> | undefined) => {
+    <K extends DotNestedKeys<T>>(
+      k: K,
+      v: GetFieldType<T, K>,
+      h: Customizing<T, K> | undefined
+    ) => {
       let enhancedV = h?.enhance ? h?.enhance(v, valuesRef.current) : v;
-      const newValues = {
-        ...valuesRef.current,
-        [k]: enhancedV,
-      };
 
+      const newValues = deepSet(valuesRef.current, k, enhancedV) as T;
       setValues(newValues);
       checkError(k, h, enhancedV, valuesRef.current);
 
@@ -348,7 +358,7 @@ export default function useFormState<T>(
     setWasSubmitted(true);
     // if it returns an object there are errors
     const errorCount = Object.keys(errorsRef.current)
-      .map((key) => !!errorsRef.current[key as keyof T])
+      .map((key) => !!errorsRef.current[key as DotNestedKeys<T>])
       .filter((n) => n).length;
     if (errorCount > 0) {
       return;
@@ -357,7 +367,7 @@ export default function useFormState<T>(
     onSubmitRef?.current?.(valuesRef.current);
   }, [errorsRef, valuesRef, onSubmitRef]);
 
-  const blur = <K extends keyof T>(
+  const blur = <K extends DotNestedKeys<T>>(
     k: K,
     h: Customizing<T, K> | undefined
   ): TextInputProps['onBlur'] =>
@@ -369,39 +379,38 @@ export default function useFormState<T>(
       }
     );
 
-  const layout = <K extends keyof T>(
+  const layout = <K extends DotNestedKeys<T>>(
     k: K,
     h: Customizing<T, K> | undefined
   ): TextInputProps['onLayout'] =>
     referencedCallback(`layout.${k}`, (e: LayoutChangeEvent) => {
       h?.onLayout?.(e);
-      const vv = valuesRef.current;
-      const value = vv[k];
-      checkError(k, h, value, vv);
+      const value = deepGet(valuesRef.current, k);
+      checkError(k as DotNestedKeys<T>, h, value as any, valuesRef.current);
     });
 
-  const text = <K extends keyof T>(
+  const text = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
-    ...ctx.referencer(k as any, ctx.formIndex),
-    testID: k as string,
-    onChangeText: referencedCallback(`text.${k}`, (n: T[K]) =>
+    ...ctx.referencer(k, ctx.formIndex),
+    testID: k,
+    onChangeText: referencedCallback(`text.${k}`, (n: GetFieldType<T, K>) =>
       changeValue(k, n, h)
     ),
     onLayout: layout(k, h),
     onBlur: blur(k, h),
-    value: (values?.[k] || '') as string,
+    value: deepGet(values, k),
   });
 
-  const numberRaw = <K extends keyof T>(
+  const numberRaw = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => {
-    const value = `${values?.[k] || ''}`.replace('.', seperationCharacter);
+    const value = `${values?.[k] || ''}`.replace('.', separationCharacter);
     return {
-      ...ctx.referencer(k as any, ctx.formIndex),
-      testID: k as string,
+      ...ctx.referencer(k, ctx.formIndex),
+      testID: k,
       onChangeText: referencedCallback(`number.${k}`, (n: string) => {
         // support numbers like 0,02
         const { lastPart, hasLastPart, firstPart } = splitNumberStringInParts(
@@ -417,17 +426,16 @@ export default function useFormState<T>(
           changeValue(k, null as any, h);
         } else {
           const numberValue = Number(firstPart.replace(',', '.'));
-          console.log({ lastPart, hasLastPart, firstPart, numberValue });
           changeValue(k, numberValue as any, h);
         }
       }),
       onBlur: blur(k, h),
       onLayout: layout(k, h),
-      value: `${value}${lastCharacters[k] || ''}`,
+      value: `${deepGet(value, k) || ''}${deepGet(lastCharacters, k) || ''}`,
     };
   };
 
-  const number = <K extends keyof T>(
+  const number = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -435,7 +443,7 @@ export default function useFormState<T>(
     keyboardType: 'number-pad',
   });
 
-  const decimal = <K extends keyof T>(
+  const decimal = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -443,7 +451,7 @@ export default function useFormState<T>(
     keyboardType: 'decimal-pad',
   });
 
-  const numberText = <K extends keyof T>(
+  const numberText = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -451,7 +459,7 @@ export default function useFormState<T>(
     keyboardType: 'number-pad',
   });
 
-  const decimalText = <K extends keyof T>(
+  const decimalText = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -459,7 +467,7 @@ export default function useFormState<T>(
     keyboardType: 'decimal-pad',
   });
 
-  const postalCode = <K extends keyof T>(
+  const postalCode = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -470,7 +478,7 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
-  const streetAddress = <K extends keyof T>(
+  const streetAddress = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -480,7 +488,7 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
-  const city = <K extends keyof T>(
+  const city = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -490,7 +498,7 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
-  const telephone = <K extends keyof T>(
+  const telephone = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -501,7 +509,7 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
-  const name = <K extends keyof T>(
+  const name = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -511,7 +519,7 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
-  const username = <K extends keyof T>(
+  const username = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -523,7 +531,7 @@ export default function useFormState<T>(
     selectTextOnFocus: Platform.OS !== 'web',
   });
 
-  const password = <K extends keyof T>(
+  const password = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -535,7 +543,7 @@ export default function useFormState<T>(
     selectTextOnFocus: Platform.OS !== 'web',
   });
 
-  const email = <K extends keyof T>(
+  const email = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => ({
@@ -547,38 +555,40 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
-  const raw = <K extends keyof T>(
+  const raw = <K extends DotNestedKeys<T>>(
     k: K,
-    h?: CustomizingRaw<T[K], T>
-  ): FormRawProps<T[K]> => ({
-    testID: k as string,
-    onChange: referencedCallback(`raw.${k}`, (n: T[K]) => {
+    h?: CustomizingRaw<GetFieldType<T, K>, T>
+  ): FormRawProps<GetFieldType<T, K>> => ({
+    testID: k,
+    onChange: referencedCallback(`raw.${k}`, (n: GetFieldType<T, K>) => {
       setTouched(k, true);
       changeValue(k, n, h as any);
     }),
-    value: values?.[k] as T[K],
+    value: deepGet(values, k),
     onLayout: layout(k, h as any),
     onBlur: blur(k, h as any),
   });
 
-  const setField = <K extends keyof T>(k: K, v: T[K]) => {
+  const setField = <K extends DotNestedKeys<T>>(
+    k: K,
+    v: GetFieldType<T, K>
+  ) => {
     if (v !== values[k]) {
       changeValue(k, v, undefined);
     }
   };
 
-  const setTouched = <K extends keyof T>(k: K, v: boolean) => {
+  const setTouched = <K extends DotNestedKeys<T>>(k: K, v: boolean) => {
     if (v !== touched[k]) {
-      sTouched((p) => ({
-        ...p,
-        [k]: v,
-      }));
+      sTouched((p) => deepSet(p, k, v) as any);
     }
   };
 
-  const hasError = <K extends keyof T>(k: K): boolean => {
-    if (touched[k] || wasSubmitted) {
-      const noError = errors[k] === false || errors[k] === undefined;
+  const hasError = <K extends DotNestedKeys<T>>(k: K): boolean => {
+    const isTouched = deepGet(touched, k);
+    const error = deepGet(errors, k);
+    if (isTouched || wasSubmitted) {
+      const noError = error === false || errors === undefined;
       return !noError;
     }
     return false;
@@ -640,12 +650,6 @@ function splitNumberStringInParts(str: string) {
 
   const maxCommaOrDotIndex = Math.max(lastCommaIndex, lastDotIndex);
 
-  console.log({
-    endsWithComma,
-    endsWithDot,
-    maxCommaOrDotIndex,
-    zeroAtEndOfString,
-  });
   if (
     endsWithComma ||
     endsWithDot ||

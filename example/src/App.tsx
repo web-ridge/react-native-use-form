@@ -11,6 +11,15 @@ type FormType = {
   age: number | undefined;
   money: number | undefined;
   postalCode: string | undefined;
+  organization: {
+    name: string;
+    telephone: string;
+    revenue: number;
+  };
+  address?: {
+    street: string;
+    houseNumber: string;
+  };
 };
 export default function App() {
   const [
@@ -24,6 +33,11 @@ export default function App() {
       age: 0,
       money: 0,
       postalCode: '',
+      organization: {
+        name: '',
+        telephone: '',
+        revenue: 0,
+      },
     },
     {
       onChange: () => {
@@ -36,7 +50,7 @@ export default function App() {
     }
   );
 
-  console.log({ values });
+  console.log({ values, errors });
   return (
     <View
       style={{
@@ -53,7 +67,6 @@ export default function App() {
           error={hasError('email')}
           {...fh.email('email', {
             validate: (v) => {
-              //@ts-ignore
               return looksLikeMail(v) ? true : 'Email-address is invalid';
             },
           })}
@@ -66,8 +79,6 @@ export default function App() {
           mode="outlined"
           {...fh.telephone('telephone', {
             validate: (v) => {
-              console.log({ v });
-              //@ts-ignore
               return looksLikeTelephone(v) ? true : 'Telephone is invalid';
             },
           })}
@@ -127,6 +138,43 @@ export default function App() {
           label="Money bank account"
           error={hasError('password')}
         />
+        <TextInput
+          mode="outlined"
+          {...fh.text('organization.telephone', {
+            required: true,
+            minLength: 3,
+            maxLength: 10,
+            validate: (v) => {
+              return looksLikeTelephone(v || '')
+                ? true
+                : 'Telephone is invalid';
+            },
+          })}
+          label="Organization telephone"
+          error={hasError('organization.telephone')}
+        />
+        <HelperText type="error" visible={hasError('organization.telephone')}>
+          {errors.organization?.telephone}
+        </HelperText>
+        <TextInput
+          mode="outlined"
+          {...fh.text('organization.revenue', {
+            required: true,
+            minLength: 3,
+            maxLength: 10,
+            validate: (v) => {
+              if (v < 10) {
+                return 'revenue too low';
+              }
+              return undefined;
+            },
+          })}
+          label="Organization revenue"
+          error={hasError('organization.revenue')}
+        />
+        <HelperText type="error" visible={hasError('organization.revenue')}>
+          {errors.organization?.revenue}
+        </HelperText>
         <Button mode="contained" onPress={submit} style={{ marginTop: 24 }}>
           Save
         </Button>
