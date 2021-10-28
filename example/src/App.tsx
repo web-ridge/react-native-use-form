@@ -78,12 +78,12 @@ export default function App() {
           mode="outlined"
           {...fh.text('postalCode', {
             enhance: (v) => {
-              return (v as string)?.toUpperCase();
+              return (v || '').toUpperCase();
             },
             validate: (v) => {
-              console.log({ v });
-              //@ts-ignore
-              return looksLikeTelephone(v) ? true : 'Telephone is invalid';
+              return looksLikeTelephone(v || '')
+                ? true
+                : 'Telephone is invalid';
             },
           })}
           label="Postalcode"

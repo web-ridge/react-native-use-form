@@ -60,9 +60,9 @@ type FormRawType<T> = <K extends keyof T>(
   handlers?: CustomizingRaw<T[K], T>
 ) => FormRawProps<T[K]>;
 
-type FormTextType<T> = (
-  key: keyof T,
-  handlers?: Customizing<T, keyof T>
+type FormTextType<T> = <K extends keyof T>(
+  key: K,
+  handlers?: Customizing<T, K>
 ) => FormTextInputProps;
 
 type FieldsBoolean<T> = {
@@ -255,6 +255,12 @@ export default function useFormState<T>(
     raw: FormRawType<T>;
   }
 ] {
+  const seperationCharacter = React.useMemo(() => {
+    const formatter = new Intl.NumberFormat();
+    const formatted = formatter.format(1.1);
+    return formatted === '1,10' ? ',' : '.';
+  }, []);
+
   const referencedCallback = useReferencedCallback();
   const ctx = useFormContext();
   const [wasSubmitted, setWasSubmitted] = React.useState<boolean>(false);
@@ -288,7 +294,7 @@ export default function useFormState<T>(
   const checkError = React.useCallback(
     <K extends keyof T>(
       k: K,
-      h: Customizing<T, keyof T> | undefined,
+      h: Customizing<T, K> | undefined,
       v: T[K],
       allV: T
     ) => {
@@ -315,11 +321,7 @@ export default function useFormState<T>(
   );
 
   const changeValue = React.useCallback(
-    <K extends keyof T>(
-      k: K,
-      v: T[K],
-      h: Customizing<T, keyof T> | undefined
-    ) => {
+    <K extends keyof T>(k: K, v: T[K], h: Customizing<T, K> | undefined) => {
       let enhancedV = h?.enhance ? h?.enhance(v, valuesRef.current) : v;
       const newValues = {
         ...valuesRef.current,
@@ -357,7 +359,7 @@ export default function useFormState<T>(
 
   const blur = <K extends keyof T>(
     k: K,
-    h: Customizing<T, keyof T> | undefined
+    h: Customizing<T, K> | undefined
   ): TextInputProps['onBlur'] =>
     referencedCallback(
       `blur.${k}`,
@@ -369,7 +371,7 @@ export default function useFormState<T>(
 
   const layout = <K extends keyof T>(
     k: K,
-    h: Customizing<T, keyof T> | undefined
+    h: Customizing<T, K> | undefined
   ): TextInputProps['onLayout'] =>
     referencedCallback(`layout.${k}`, (e: LayoutChangeEvent) => {
       h?.onLayout?.(e);
@@ -380,7 +382,7 @@ export default function useFormState<T>(
 
   const text = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...ctx.referencer(k as any, ctx.formIndex),
     testID: k as string,
@@ -394,33 +396,40 @@ export default function useFormState<T>(
 
   const numberRaw = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
-  ): FormTextInputProps => ({
-    ...ctx.referencer(k as any, ctx.formIndex),
-    testID: k as string,
-    onChangeText: referencedCallback(`number.${k}`, (n: string) => {
-      // support numbers like 0,02
-      const { lastPart, hasLastPart, firstPart } = splitNumberStringInParts(n);
-      if (hasLastPart) {
-        setLastCharacters((prev) => ({ ...prev, [k]: lastPart }));
-      } else {
-        setLastCharacters((prev) => ({ ...prev, [k]: undefined }));
-      }
+    h?: Customizing<T, K>
+  ): FormTextInputProps => {
+    const value = `${values?.[k] || ''}`.replace('.', seperationCharacter);
+    return {
+      ...ctx.referencer(k as any, ctx.formIndex),
+      testID: k as string,
+      onChangeText: referencedCallback(`number.${k}`, (n: string) => {
+        // support numbers like 0,02
+        const { lastPart, hasLastPart, firstPart } = splitNumberStringInParts(
+          n
+        );
+        if (hasLastPart) {
+          setLastCharacters((prev) => ({ ...prev, [k]: lastPart }));
+        } else {
+          setLastCharacters((prev) => ({ ...prev, [k]: undefined }));
+        }
 
-      if (n === '') {
-        changeValue(k, null as any, h);
-      } else {
-        changeValue(k, Number(firstPart) as any, h);
-      }
-    }),
-    onBlur: blur(k, h),
-    onLayout: layout(k, h),
-    value: `${(values?.[k] || '') as string}${lastCharacters[k] || ''}`,
-  });
+        if (n === '') {
+          changeValue(k, null as any, h);
+        } else {
+          const numberValue = Number(firstPart.replace(',', '.'));
+          console.log({ lastPart, hasLastPart, firstPart, numberValue });
+          changeValue(k, numberValue as any, h);
+        }
+      }),
+      onBlur: blur(k, h),
+      onLayout: layout(k, h),
+      value: `${value}${lastCharacters[k] || ''}`,
+    };
+  };
 
   const number = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...numberRaw(k, h),
     keyboardType: 'number-pad',
@@ -428,7 +437,7 @@ export default function useFormState<T>(
 
   const decimal = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...numberRaw(k, h),
     keyboardType: 'decimal-pad',
@@ -436,7 +445,7 @@ export default function useFormState<T>(
 
   const numberText = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     keyboardType: 'number-pad',
@@ -444,7 +453,7 @@ export default function useFormState<T>(
 
   const decimalText = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     keyboardType: 'decimal-pad',
@@ -452,7 +461,7 @@ export default function useFormState<T>(
 
   const postalCode = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     autoCapitalize: 'characters',
@@ -463,7 +472,7 @@ export default function useFormState<T>(
 
   const streetAddress = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     autoCapitalize: 'words',
@@ -473,7 +482,7 @@ export default function useFormState<T>(
 
   const city = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     autoCapitalize: 'words',
@@ -483,7 +492,7 @@ export default function useFormState<T>(
 
   const telephone = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     textContentType: 'telephoneNumber',
@@ -494,7 +503,7 @@ export default function useFormState<T>(
 
   const name = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     autoCapitalize: 'words',
@@ -504,7 +513,7 @@ export default function useFormState<T>(
 
   const username = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     textContentType: 'username',
@@ -516,7 +525,7 @@ export default function useFormState<T>(
 
   const password = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     textContentType: 'password',
@@ -528,7 +537,7 @@ export default function useFormState<T>(
 
   const email = <K extends keyof T>(
     k: K,
-    h?: Customizing<T, keyof T>
+    h?: Customizing<T, K>
   ): FormTextInputProps => ({
     ...text(k, h),
     textContentType: 'emailAddress',
@@ -607,24 +616,52 @@ export default function useFormState<T>(
   ];
 }
 
+function countZeroAtEndOfString(str: string) {
+  let count = 0;
+  const reversed = reverse(str);
+  for (let character of reversed) {
+    if (character !== '0') {
+      return count;
+    } else {
+      count++;
+    }
+  }
+  return count;
+}
+
 function splitNumberStringInParts(str: string) {
   const lastCommaIndex = str.lastIndexOf(',');
   const lastDotIndex = str.lastIndexOf('.');
 
   const endsWithComma = str.endsWith(',');
   const endsWithDot = str.endsWith('.');
-  const endsWithZero = str.endsWith('0');
+  const zeroAtEndOfString = countZeroAtEndOfString(str);
+  const endsWithZero = zeroAtEndOfString > 0;
 
   const maxCommaOrDotIndex = Math.max(lastCommaIndex, lastDotIndex);
 
+  console.log({
+    endsWithComma,
+    endsWithDot,
+    maxCommaOrDotIndex,
+    zeroAtEndOfString,
+  });
   if (
     endsWithComma ||
     endsWithDot ||
-    (maxCommaOrDotIndex > 0 && endsWithZero)
+    (maxCommaOrDotIndex > 0 && zeroAtEndOfString > 0)
   ) {
+    const zeroSliceIndex = str.length - zeroAtEndOfString;
+    let sliceIndex = endsWithZero ? zeroSliceIndex : maxCommaOrDotIndex;
+
+    // 1,10
+    if (zeroSliceIndex - 1 === maxCommaOrDotIndex) {
+      sliceIndex = maxCommaOrDotIndex;
+    }
+
     return {
-      firstPart: str.slice(0, maxCommaOrDotIndex),
-      lastPart: str.slice(maxCommaOrDotIndex, str.length),
+      firstPart: str.slice(0, sliceIndex),
+      lastPart: str.slice(sliceIndex, str.length),
       hasLastPart: true,
     };
   }
@@ -636,10 +673,10 @@ function splitNumberStringInParts(str: string) {
   };
 }
 
-// function reverse(str: string) {
-//   let reversed = '';
-//   for (let character of str) {
-//     reversed = character + reversed;
-//   }
-//   return reversed;
-// }
+function reverse(str: string) {
+  let reversed = '';
+  for (let character of str) {
+    reversed = character + reversed;
+  }
+  return reversed;
+}
