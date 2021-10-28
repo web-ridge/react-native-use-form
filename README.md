@@ -2,7 +2,7 @@
 <h1 align="center">
   <img src="https://user-images.githubusercontent.com/6492229/120776507-9c7f1200-c524-11eb-905e-5ad46f2c2709.png" width="128">
   <br>
-  react-native-use-form (⚠️ still in beta)
+  react-native-use-form
 </h1>
 
 <p align="center">
@@ -25,7 +25,9 @@ Simple form library for React Native with great UX for developer and end-user ap
 - Validation (we will add more in built features)
 - Automatically adds a lot of props e.g. when you use the telephone('telNumber') it will open up the right keyboard + autocomplete
 - Email, username, password, number, numberText, decimal, decimalText,
-- Typescript
+- Great typescript support!
+- Nested object with dot notation
+- Nested forms
 
 See a demo: https://twitter.com/RichardLindhout/status/1344009881863516165
 
