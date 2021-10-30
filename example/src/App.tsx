@@ -10,9 +10,13 @@ import {
   Title,
 } from 'react-native-paper';
 
+type AddressCompany = {
+  name: string;
+};
 type AddressType = {
   street: string;
   houseNumber: string;
+  company?: AddressCompany | null;
 };
 type FormType = {
   email: string;
@@ -26,7 +30,7 @@ type FormType = {
     telephone: string;
     revenue: number;
   };
-  address?: AddressType;
+  address?: AddressType | null;
 };
 export default function App() {
   const [
@@ -57,6 +61,8 @@ export default function App() {
     }
   );
 
+  const dd = fh.raw('address.company');
+  console.log({ dd });
   console.log({ values, errors });
   return (
     <View
@@ -186,7 +192,7 @@ export default function App() {
         </HelperText>
 
         <AddressEdit {...fh.raw('address')} />
-
+        <AddressCompanyEdit {...fh.raw('address.company')} />
         <Button mode="contained" onPress={submit} style={{ marginTop: 24 }}>
           Save
         </Button>
@@ -200,11 +206,11 @@ function AddressEdit({
   onChange,
   ...rest
 }: {
-  value: AddressType | undefined;
-  onChange: (v: AddressType | undefined) => void;
+  value: AddressType | null | undefined;
+  onChange: (v: AddressType | null | undefined) => void;
 }) {
   const [{ formProps }, fh] = useFormState<AddressType>(
-    value || { street: '', houseNumber: '' },
+    value || { street: '', houseNumber: '', company: { name: '' } },
     {
       onChange,
     }
@@ -223,6 +229,30 @@ function AddressEdit({
           label="House number"
           {...fh.streetAddress('houseNumber')}
         />
+      </Form>
+    </Surface>
+  );
+}
+
+function AddressCompanyEdit({
+  value,
+  onChange,
+  ...rest
+}: {
+  value: AddressCompany | undefined | null;
+  onChange: (v: AddressCompany | undefined | null) => void;
+}) {
+  const [{ formProps }, fh] = useFormState<AddressCompany>(
+    value || { name: '' },
+    {
+      onChange,
+    }
+  );
+  return (
+    <Surface {...rest}>
+      <Title>Nested form</Title>
+      <Form {...formProps}>
+        <TextInput mode="outlined" label="Street" {...fh.text('name')} />
       </Form>
     </Surface>
   );
