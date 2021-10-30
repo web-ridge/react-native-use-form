@@ -1,9 +1,19 @@
 import * as React from 'react';
 
 import { View } from 'react-native';
-import { useFormState, Form } from '../../src/index';
-import { Button, HelperText, TextInput } from 'react-native-paper';
+import { Form, useFormState } from '../../src/index';
+import {
+  Button,
+  HelperText,
+  Surface,
+  TextInput,
+  Title,
+} from 'react-native-paper';
 
+type AddressType = {
+  street: string;
+  houseNumber: string;
+};
 type FormType = {
   email: string;
   telephone: string;
@@ -16,10 +26,7 @@ type FormType = {
     telephone: string;
     revenue: number;
   };
-  address?: {
-    street: string;
-    houseNumber: string;
-  };
+  address?: AddressType;
 };
 export default function App() {
   const [
@@ -58,7 +65,9 @@ export default function App() {
         marginTop: 100,
         marginLeft: 12,
         marginRight: 12,
-        // alignSelf: 'center',
+        alignSelf: 'center',
+        width: 300,
+        paddingBottom: 500,
       }}
     >
       <Form {...formProps}>
@@ -175,6 +184,9 @@ export default function App() {
         <HelperText type="error" visible={hasError('organization.revenue')}>
           {errors.organization?.revenue}
         </HelperText>
+
+        <AddressEdit {...fh.raw('address')} />
+
         <Button mode="contained" onPress={submit} style={{ marginTop: 24 }}>
           Save
         </Button>
@@ -183,15 +195,44 @@ export default function App() {
   );
 }
 
+function AddressEdit({
+  value,
+  onChange,
+  ...rest
+}: {
+  value: AddressType | undefined;
+  onChange: (v: AddressType | undefined) => void;
+}) {
+  const [{ formProps }, fh] = useFormState<AddressType>(
+    value || { street: '', houseNumber: '' },
+    {
+      onChange,
+    }
+  );
+  return (
+    <Surface {...rest}>
+      <Title>Nested form</Title>
+      <Form {...formProps}>
+        <TextInput
+          mode="outlined"
+          label="Street"
+          {...fh.streetAddress('street')}
+        />
+        <TextInput
+          mode="outlined"
+          label="House number"
+          {...fh.streetAddress('houseNumber')}
+        />
+      </Form>
+    </Surface>
+  );
+}
+
 function looksLikeTelephone(str: string): boolean {
   if (str.length !== 10) {
     return false;
   }
-  let isNum = /^\d+$/.test(str);
-  if (!isNum) {
-    return false;
-  }
-  return true;
+  return /^\d+$/.test(str);
 }
 
 function looksLikeMail(str: string): boolean {

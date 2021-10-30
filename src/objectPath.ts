@@ -174,7 +174,7 @@ export function deepGet<V>(obj: any, path: any): V {
     return nextObj;
   }
 
-  return deepGet((obj as any)[currentPath], path.slice(1));
+  return deepGet(obj[currentPath], path.slice(1));
 }
 
 export const deepSet = set.bind(null, null);

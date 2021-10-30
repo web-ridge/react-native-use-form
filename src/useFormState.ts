@@ -16,6 +16,7 @@ import type {
   DotNestedKeys,
   GetFieldType,
   TouchedUtility,
+  DotNestedKeysWithRoot,
 } from './types';
 
 type FormTextInputProps = {
@@ -62,7 +63,7 @@ type CustomizingRaw<V, T> = {
   onLayout?: TextInputProps['onLayout'];
 };
 
-type FormRawType<T> = <K extends DotNestedKeys<T>>(
+type FormRawType<T> = <K extends DotNestedKeysWithRoot<T>>(
   key: K,
   handlers?: CustomizingRaw<GetFieldType<T, K>, T>
 ) => FormRawProps<GetFieldType<T, K>>;
