@@ -18,6 +18,7 @@ import type {
   TouchedUtility,
   DotNestedKeysWithRoot,
 } from './types';
+import type { SetStateAction } from 'react';
 
 type FormTextInputProps = {
   testID: string;
@@ -241,6 +242,7 @@ export default function useFormState<T>(
       indexer: IndexerType;
       referencer: ReferencerType;
     };
+    setValues: React.Dispatch<SetStateAction<T>>;
     hasError: <K extends DotNestedKeys<T>>(key: K) => boolean;
   },
   {
@@ -612,6 +614,7 @@ export default function useFormState<T>(
       formProps: { referencer: ctx.referencer, indexer: ctx.indexer },
       hasError,
       clearErrors,
+      setValues,
     },
     {
       text,
