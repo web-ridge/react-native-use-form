@@ -18,7 +18,7 @@
   </a>
 </p>
 
-Simple form library for React Native with great UX for developer and end-user api and some code based on the amazing library [wsmd/react-native-use-form](https://github.com/wsmd/react-native-use-form)
+Simple form library for React Native with great UX for developer and end-user api and some code inspired by [wsmd/react-native-use-form](https://github.com/wsmd/react-native-use-form)
 
 
 - Autoscroll to next fields with keyboard
