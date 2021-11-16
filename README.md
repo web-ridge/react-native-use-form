@@ -18,7 +18,7 @@
   </a>
 </p>
 
-Simple form library for React Native with great UX for developer and end-user api and some code based on the amazing library [wsmd/react-native-use-form](https://github.com/wsmd/react-native-use-form)
+Simple form library for React Native with great UX for developer and end-user api and some code inspired by [wsmd/react-native-use-form](https://github.com/wsmd/react-native-use-form)
 
 
 - Autoscroll to next fields with keyboard
@@ -28,6 +28,7 @@ Simple form library for React Native with great UX for developer and end-user ap
 - Great typescript support!
 - Nested object with dot notation
 - Nested forms
+- Great decimal support with support for , notation and automatically convert it to a Number object
 
 See a demo: https://twitter.com/RichardLindhout/status/1344009881863516165
 
@@ -161,3 +162,11 @@ See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the 
 ## License
 
 MIT
+
+### Checkout our other libraries
+- Smooth and fast cross platform Material Design date and time picker for React Native Paper: [react-native-paper-dates](https://github.com/web-ridge/react-native-paper-dates)
+- Smooth and fast cross platform Material Design Tabs for React Native Paper: [react-native-paper-tabs](https://github.com/web-ridge/react-native-paper-tabs)
+- Simple translations in React (Native): [react-ridge-translations](https://github.com/web-ridge/react-ridge-translations)
+- Simple global state management in React (Native): [react-ridge-state](https://github.com/web-ridge/react-ridge-state)
+- 1 command utility for React Native (Web) project: [create-react-native-web-application](https://github.com/web-ridge/create-react-native-web-application)
+
