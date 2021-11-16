@@ -54,19 +54,20 @@ type Customizing<T, K extends DotNestedKeys<T>> = {
   onLayout?: TextInputProps['onLayout'];
 };
 
-type CustomizingRaw<V, T> = {
+type CustomizingRaw<T, K extends DotNestedKeys<T>> = {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
-  enhance?: (v: V, values: T) => V;
-  validate?: (v: V, values: T) => void;
+  validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
+  enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
+  onChange?: (v: GetFieldType<T, K>) => void;
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
 };
 
 type FormRawType<T> = <K extends DotNestedKeysWithRoot<T>>(
   key: K,
-  handlers?: CustomizingRaw<GetFieldType<T, K>, T>
+  handlers?: CustomizingRaw<T, K>
 ) => FormRawProps<GetFieldType<T, K>>;
 
 type FormTextType<T> = <K extends DotNestedKeys<T>>(
@@ -306,7 +307,7 @@ export default function useFormState<T>(
   const checkError = React.useCallback(
     <K extends DotNestedKeys<T>>(
       k: K,
-      h: Customizing<T, K> | undefined,
+      h: Customizing<T, K> | CustomizingRaw<T, K> | undefined,
       v: GetFieldType<T, K>,
       allV: T
     ) => {
@@ -336,7 +337,7 @@ export default function useFormState<T>(
     <K extends DotNestedKeys<T>>(
       k: K,
       v: GetFieldType<T, K>,
-      h: Customizing<T, K> | undefined
+      h: Customizing<T, K> | CustomizingRaw<T, K> | undefined
     ) => {
       let enhancedV = h?.enhance ? h?.enhance(v, valuesRef.current) : v;
 
@@ -344,8 +345,8 @@ export default function useFormState<T>(
       setValues(newValues);
       checkError(k, h, enhancedV, valuesRef.current);
 
-      h?.onChangeText?.((enhancedV as any) as string);
-
+      (h as Customizing<T, K>)?.onChangeText?.(enhancedV as any);
+      (h as CustomizingRaw<T, K>)?.onChange?.(enhancedV as any);
       // prevent endless re-render if called on nested form
       // TODO: not needed anymore probably test it out
       setTimeout(() => {
@@ -565,12 +566,12 @@ export default function useFormState<T>(
 
   const raw = <K extends DotNestedKeys<T>>(
     k: K,
-    h?: CustomizingRaw<GetFieldType<T, K>, T>
+    h?: CustomizingRaw<T, K>
   ): FormRawProps<GetFieldType<T, K>> => ({
     testID: k,
     onChange: referencedCallback(`raw.${k}`, (n: GetFieldType<T, K>) => {
       setTouched(k, true);
-      changeValue(k, n, h as any);
+      changeValue(k, n, h);
     }),
     value: deepGet(values, k),
     onLayout: layout(k, h as any),
