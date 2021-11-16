@@ -340,13 +340,14 @@ export default function useFormState<T>(
       h: Customizing<T, K> | CustomizingRaw<T, K> | undefined
     ) => {
       let enhancedV = h?.enhance ? h?.enhance(v, valuesRef.current) : v;
-
       const newValues = deepSet(valuesRef.current, k, enhancedV) as T;
-      setValues(newValues);
-      checkError(k, h, enhancedV, valuesRef.current);
 
       (h as Customizing<T, K>)?.onChangeText?.(enhancedV as any);
       (h as CustomizingRaw<T, K>)?.onChange?.(enhancedV as any);
+
+      setValues(newValues);
+      checkError(k, h, enhancedV, valuesRef.current);
+
       // prevent endless re-render if called on nested form
       // TODO: not needed anymore probably test it out
       setTimeout(() => {
