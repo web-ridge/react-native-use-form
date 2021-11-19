@@ -65,8 +65,8 @@ export type ErrorUtility<T> = {
     : ErrorUtility<T[K]>;
 };
 
-export type TouchedUtility<T> = {
+export type BooleanUtility<T> = {
   [K in keyof T]?: T[K] extends number | string | boolean
     ? boolean
-    : ErrorUtility<T[K]>;
+    : BooleanUtility<T[K]>;
 };

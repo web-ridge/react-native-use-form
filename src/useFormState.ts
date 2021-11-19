@@ -15,7 +15,7 @@ import type {
   ErrorUtility,
   DotNestedKeys,
   GetFieldType,
-  TouchedUtility,
+  BooleanUtility,
   DotNestedKeysWithRoot,
 } from './types';
 import type { SetStateAction } from 'react';
@@ -227,7 +227,8 @@ export default function useFormState<T>(
   {
     values: T;
     errors: ErrorUtility<T>;
-    touched: TouchedUtility<T>;
+    touched: BooleanUtility<T>;
+    focusedOnce: BooleanUtility<T>;
     setField: <K extends DotNestedKeys<T>>(
       key: K,
       value: GetFieldType<T, K>
@@ -279,7 +280,8 @@ export default function useFormState<T>(
   const referencedCallback = useReferencedCallback();
   const ctx = useFormContext();
   const [wasSubmitted, setWasSubmitted] = React.useState<boolean>(false);
-  const [touched, sTouched] = React.useState<TouchedUtility<T>>({});
+  const [touched, sTouched] = React.useState<BooleanUtility<T>>({});
+  const [focusedOnce, sFocusedOnce] = React.useState<BooleanUtility<T>>({});
   const [errors, sErrors] = React.useState<ErrorUtility<T>>({});
   const [values, setValues] = React.useState<T>(initialState);
   const [lastCharacters, setLastCharacters] = React.useState<
@@ -287,7 +289,6 @@ export default function useFormState<T>(
   >({});
 
   const valuesRef = useLatest(values);
-  const onChangeRef = useLatest(options?.onChange);
   const errorsRef = useLatest(errors);
 
   const setError = React.useCallback(
@@ -333,29 +334,26 @@ export default function useFormState<T>(
     [setError]
   );
 
-  const changeValue = React.useCallback(
-    <K extends DotNestedKeys<T>>(
-      k: K,
-      v: GetFieldType<T, K>,
-      h: Customizing<T, K> | CustomizingRaw<T, K> | undefined
-    ) => {
-      let enhancedV = h?.enhance ? h?.enhance(v, valuesRef.current) : v;
-      const newValues = deepSet(valuesRef.current, k, enhancedV) as T;
+  const changeValue = <K extends DotNestedKeys<T>>(
+    k: K,
+    v: GetFieldType<T, K>,
+    h: Customizing<T, K> | CustomizingRaw<T, K> | undefined
+  ) => {
+    let enhancedV = h?.enhance ? h?.enhance(v, valuesRef.current) : v;
+    const newValues = deepSet(valuesRef.current, k, enhancedV) as T;
 
-      (h as Customizing<T, K>)?.onChangeText?.(enhancedV as any);
-      (h as CustomizingRaw<T, K>)?.onChange?.(enhancedV as any);
+    (h as Customizing<T, K>)?.onChangeText?.(enhancedV as any);
+    (h as CustomizingRaw<T, K>)?.onChange?.(enhancedV as any);
 
-      setValues(newValues);
-      checkError(k, h, enhancedV, valuesRef.current);
-
-      // prevent endless re-render if called on nested form
-      // TODO: not needed anymore probably test it out
-      setTimeout(() => {
-        onChangeRef?.current?.(newValues);
-      }, 0);
-    },
-    [setValues, onChangeRef, valuesRef, checkError]
-  );
+    setValues(newValues);
+    checkError(k, h, enhancedV, valuesRef.current);
+    setTouched(k, true);
+    // prevent endless re-render if called on nested form
+    // TODO: not needed anymore probably test it out
+    setTimeout(() => {
+      options?.onChange?.(newValues);
+    }, 0);
+  };
 
   const onSubmitRef = useLatest(options?.onSubmit);
 
@@ -380,7 +378,7 @@ export default function useFormState<T>(
       `blur.${k}`,
       (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
         h?.onBlur?.(e);
-        setTouched(k, true);
+        setFocusedOnce(k, true);
       }
     );
 
@@ -572,6 +570,7 @@ export default function useFormState<T>(
     testID: k,
     onChange: referencedCallback(`raw.${k}`, (n: GetFieldType<T, K>) => {
       setTouched(k, true);
+      setFocusedOnce(k, true);
       changeValue(k, n, h);
     }),
     value: deepGet(values, k),
@@ -594,10 +593,17 @@ export default function useFormState<T>(
     }
   };
 
+  const setFocusedOnce = <K extends DotNestedKeys<T>>(k: K, v: boolean) => {
+    if (v !== deepGet(focusedOnce, k)) {
+      sFocusedOnce((p) => deepSet(p, k, v) as any);
+    }
+  };
+
   const hasError = <K extends DotNestedKeys<T>>(k: K): boolean => {
     const isTouched = deepGet(touched, k);
+    const isFocusedOnce = deepGet(focusedOnce, k);
     const error = deepGet(errors, k);
-    if (isTouched || wasSubmitted) {
+    if ((isTouched && isFocusedOnce) || wasSubmitted) {
       const noError = error === false || errors === undefined;
       return !noError;
     }
@@ -609,6 +615,7 @@ export default function useFormState<T>(
       values,
       errors,
       touched,
+      focusedOnce,
       setField,
       setError,
       setTouched,
