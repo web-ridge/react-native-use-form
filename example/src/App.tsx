@@ -54,15 +54,13 @@ export default function App() {
       onChange: () => {
         // TODO: fix enum in backend
       },
-      onSubmit: () => {
-        console.log('no errors, submit!');
+      onSubmit: (v, extra) => {
+        console.log('no errors, submit!', { v, extra });
         // alert('no errors we can submit');
       },
     }
   );
 
-  const dd = fh.raw('address.company');
-  console.log({ dd });
   console.log({ values, errors });
   return (
     <View
@@ -141,7 +139,7 @@ export default function App() {
             maxLength: 10,
           })}
           label="Age"
-          error={hasError('password')}
+          error={hasError('age')}
         />
         <TextInput
           mode="outlined"
@@ -151,7 +149,7 @@ export default function App() {
             maxLength: 10,
           })}
           label="Money bank account"
-          error={hasError('password')}
+          error={hasError('money')}
         />
         <TextInput
           mode="outlined"

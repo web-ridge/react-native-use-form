@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 import { FormContext, FormContextType } from './FormContext';
-import { useLatest, useReferencedCallback } from './utils';
+import { useReferencedCallback } from './utils';
 import { deepSet, deepGet } from './objectPath';
 import type {
   ErrorUtility,
@@ -174,7 +174,12 @@ export function useInnerContext(skip?: boolean) {
       onSubmitEditing:
         lastKey === key
           ? undefined
-          : referencedCallback(`focusNext.${key}`, () => {
+          : // TODO: handle submit on last onSubmitEditing
+            // referencedCallback(`submitEditing.${key}`, () => {
+            //   submit();
+            // })
+            // TODO: blurOrSubmit on last field?
+            referencedCallback(`focusNext.${key}`, () => {
               const rk = refForKey.current[formIndex] || {};
               const ik = indexForKey.current[formIndex] || {};
               const currentField = rk[key];
@@ -220,8 +225,21 @@ export function useInnerContext(skip?: boolean) {
 export default function useFormState<T>(
   initialState: T,
   options?: {
-    onChange?: (newState: T) => void;
-    onSubmit?: (newState: T) => void;
+    onChange?: (
+      newState: T,
+      extra: {
+        errors: ErrorUtility<T>;
+        touched: BooleanUtility<T>;
+        focusedOnce: BooleanUtility<T>;
+      }
+    ) => void;
+    onSubmit?: (
+      newState: T,
+      extra: {
+        touched: BooleanUtility<T>;
+        focusedOnce: BooleanUtility<T>;
+      }
+    ) => void;
   }
 ): [
   {
@@ -288,17 +306,14 @@ export default function useFormState<T>(
     FieldsLastCharacters<T>
   >({});
 
-  const valuesRef = useLatest(values);
-  const errorsRef = useLatest(errors);
-
   const setError = React.useCallback(
     <K extends DotNestedKeys<T>>(k: K, v: boolean | string | undefined) => {
-      const error = deepGet(errorsRef.current, k);
+      const error = deepGet(errors, k);
       if (v !== error) {
         sErrors((prev) => deepSet(prev, k, v) as any);
       }
     },
-    [errorsRef, sErrors]
+    [errors, sErrors]
   );
 
   const clearErrors = React.useCallback(() => {
@@ -339,36 +354,34 @@ export default function useFormState<T>(
     v: GetFieldType<T, K>,
     h: Customizing<T, K> | CustomizingRaw<T, K> | undefined
   ) => {
-    let enhancedV = h?.enhance ? h?.enhance(v, valuesRef.current) : v;
-    const newValues = deepSet(valuesRef.current, k, enhancedV) as T;
+    let enhancedV = h?.enhance ? h?.enhance(v, values) : v;
+    const newValues = deepSet(values, k, enhancedV) as T;
 
     (h as Customizing<T, K>)?.onChangeText?.(enhancedV as any);
     (h as CustomizingRaw<T, K>)?.onChange?.(enhancedV as any);
 
     setValues(newValues);
-    checkError(k, h, enhancedV, valuesRef.current);
+    checkError(k, h, enhancedV, values);
     setTouched(k, true);
     // prevent endless re-render if called on nested form
     // TODO: not needed anymore probably test it out
     setTimeout(() => {
-      options?.onChange?.(newValues);
+      options?.onChange?.(newValues, { touched, focusedOnce, errors });
     }, 0);
   };
 
-  const onSubmitRef = useLatest(options?.onSubmit);
-
-  const submit = React.useCallback(() => {
+  const submit = () => {
     setWasSubmitted(true);
     // if it returns an object there are errors
-    const errorCount = Object.keys(errorsRef.current)
-      .map((key) => !!errorsRef.current[key as DotNestedKeys<T>])
-      .filter((n) => n).length;
-    if (errorCount > 0) {
+    if (checkErrorObject(errors)) {
       return;
     }
 
-    onSubmitRef?.current?.(valuesRef.current);
-  }, [errorsRef, valuesRef, onSubmitRef]);
+    options?.onSubmit?.(values, {
+      touched,
+      focusedOnce,
+    });
+  };
 
   const blur = <K extends DotNestedKeys<T>>(
     k: K,
@@ -388,8 +401,8 @@ export default function useFormState<T>(
   ): TextInputProps['onLayout'] =>
     referencedCallback(`layout.${k}`, (e: LayoutChangeEvent) => {
       h?.onLayout?.(e);
-      const value = deepGet(valuesRef.current, k);
-      checkError(k as DotNestedKeys<T>, h, value as any, valuesRef.current);
+      const value = deepGet(values, k);
+      checkError(k as DotNestedKeys<T>, h, value as any, values);
     });
 
   const text = <K extends DotNestedKeys<T>>(
@@ -701,4 +714,27 @@ function reverse(str: string) {
     reversed = character + reversed;
   }
   return reversed;
+}
+
+function checkErrorObject(errors: any) {
+  const keys = Object.keys(errors);
+  for (let key of keys) {
+    if (isObject(errors[key])) {
+      if (checkErrorObject(errors[key])) {
+        return false;
+      }
+    } else {
+      if (!!errors[key]) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isObject<T>(val: T) {
+  if (val === null) {
+    return false;
+  }
+  return typeof val === 'function' || typeof val === 'object';
 }
