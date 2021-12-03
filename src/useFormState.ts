@@ -225,7 +225,7 @@ export function useInnerContext(skip?: boolean) {
 export default function useFormState<T>(
   initialState: T,
   options?: {
-    enhance?: (newState: T) => T;
+    enhance?: (newValues: T, extra: { previousValues: T }) => T;
     onChange?: (
       newState: T,
       extra: {
@@ -358,7 +358,7 @@ export default function useFormState<T>(
     let enhancedV = h?.enhance ? h?.enhance(v, values) : v;
     const newValues = deepSet(values, k, enhancedV) as T;
     const enhancedNewValues = options?.enhance
-      ? options?.enhance(newValues)
+      ? options?.enhance(newValues, { previousValues: values })
       : newValues;
 
     (h as Customizing<T, K>)?.onChangeText?.(enhancedV as any);
