@@ -102,7 +102,7 @@ export default function App() {
           mode="outlined"
           {...fh.text('postalCode', {
             enhance: (v) => {
-              return (v || '').toUpperCase();
+              return { value: (v || '').toUpperCase() };
             },
             // validate: (v) => {
             //   return looksLikeTelephone(v || '')

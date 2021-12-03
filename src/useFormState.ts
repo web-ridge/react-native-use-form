@@ -48,7 +48,10 @@ type Customizing<T, K extends DotNestedKeys<T>> = {
   minLength?: number;
   maxLength?: number;
   validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
-  enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
+  enhance?: (
+    v: GetFieldType<T, K>,
+    values: T
+  ) => { value?: GetFieldType<T, K>; newValues?: T };
   onChangeText?: TextInputProps['onChangeText'];
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
@@ -59,7 +62,10 @@ type CustomizingRaw<T, K extends DotNestedKeys<T>> = {
   minLength?: number;
   maxLength?: number;
   validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
-  enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
+  enhance?: (
+    v: GetFieldType<T, K>,
+    values: T
+  ) => { value?: GetFieldType<T, K>; newValues?: T };
   onChange?: (v: GetFieldType<T, K>) => void;
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
@@ -355,8 +361,15 @@ export default function useFormState<T>(
     v: GetFieldType<T, K>,
     h: Customizing<T, K> | CustomizingRaw<T, K> | undefined
   ) => {
-    let enhancedV = h?.enhance ? h?.enhance(v, values) : v;
-    const newValues = deepSet(values, k, enhancedV) as T;
+    let enhanced = h?.enhance?.(v, values) || {};
+    // set enhanced value or normal value
+    let enhancedV = 'value' in enhanced ? enhanced?.value : v;
+    const newValues = deepSet(
+      // let enhance function edit form-state of fallback on normal values
+      'newValues' in enhanced ? enhanced?.newValues : values,
+      k,
+      enhancedV
+    ) as T;
     const enhancedNewValues = options?.enhance
       ? options?.enhance(newValues, { previousValues: values })
       : newValues;
@@ -365,7 +378,7 @@ export default function useFormState<T>(
     (h as CustomizingRaw<T, K>)?.onChange?.(enhancedV as any);
 
     setValues(enhancedNewValues);
-    checkError(k, h, enhancedV, enhancedNewValues);
+    checkError(k, h, enhancedV!, enhancedNewValues);
     setTouched(k, true);
     // prevent endless re-render if called on nested form
     // TODO: not needed anymore probably test it out
