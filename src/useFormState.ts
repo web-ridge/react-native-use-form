@@ -225,6 +225,7 @@ export function useInnerContext(skip?: boolean) {
 export default function useFormState<T>(
   initialState: T,
   options?: {
+    enhance?: (newState: T) => T;
     onChange?: (
       newState: T,
       extra: {
@@ -356,17 +357,20 @@ export default function useFormState<T>(
   ) => {
     let enhancedV = h?.enhance ? h?.enhance(v, values) : v;
     const newValues = deepSet(values, k, enhancedV) as T;
+    const enhancedNewValues = options?.enhance
+      ? options?.enhance(newValues)
+      : newValues;
 
     (h as Customizing<T, K>)?.onChangeText?.(enhancedV as any);
     (h as CustomizingRaw<T, K>)?.onChange?.(enhancedV as any);
 
-    setValues(newValues);
-    checkError(k, h, enhancedV, values);
+    setValues(enhancedNewValues);
+    checkError(k, h, enhancedV, enhancedNewValues);
     setTouched(k, true);
     // prevent endless re-render if called on nested form
     // TODO: not needed anymore probably test it out
     setTimeout(() => {
-      options?.onChange?.(newValues, { touched, focusedOnce, errors });
+      options?.onChange?.(enhancedNewValues, { touched, focusedOnce, errors });
     }, 0);
   };
 
