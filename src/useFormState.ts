@@ -48,10 +48,8 @@ type Customizing<T, K extends DotNestedKeys<T>> = {
   minLength?: number;
   maxLength?: number;
   validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
-  enhance?: (
-    v: GetFieldType<T, K>,
-    values: T
-  ) => { value?: GetFieldType<T, K>; newValues?: T };
+  enhanceValues?: (v: GetFieldType<T, K>, values: T) => T;
+  enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
   onChangeText?: TextInputProps['onChangeText'];
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
@@ -62,10 +60,8 @@ type CustomizingRaw<T, K extends DotNestedKeys<T>> = {
   minLength?: number;
   maxLength?: number;
   validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
-  enhance?: (
-    v: GetFieldType<T, K>,
-    values: T
-  ) => { value?: GetFieldType<T, K>; newValues?: T };
+  enhanceValues?: (v: GetFieldType<T, K>, values: T) => T;
+  enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
   onChange?: (v: GetFieldType<T, K>) => void;
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
@@ -361,12 +357,11 @@ export default function useFormState<T>(
     v: GetFieldType<T, K>,
     h: Customizing<T, K> | CustomizingRaw<T, K> | undefined
   ) => {
-    let enhanced = h?.enhance?.(v, values) || {};
     // set enhanced value or normal value
-    let enhancedV = 'value' in enhanced ? enhanced?.value : v;
+    let enhancedV = h?.enhance?.(v, values) || v;
     const newValues = deepSet(
       // let enhance function edit form-state of fallback on normal values
-      'newValues' in enhanced ? enhanced?.newValues : values,
+      h?.enhanceValues?.(enhancedV, values) || values,
       k,
       enhancedV
     ) as T;
@@ -440,7 +435,8 @@ export default function useFormState<T>(
     k: K,
     h?: Customizing<T, K>
   ): FormTextInputProps => {
-    const value = `${deepGet(values, k) || ''}`.replace(
+    const deepValue = deepGet(values, k) as number;
+    const value = `${isEmptyNumber(deepValue) ? '' : deepValue}`.replace(
       '.',
       separationCharacter
     );
@@ -731,6 +727,10 @@ function reverse(str: string) {
     reversed = character + reversed;
   }
   return reversed;
+}
+
+function isEmptyNumber(str: number) {
+  return !str && str !== 0;
 }
 
 function checkErrorObject(errors: any) {
