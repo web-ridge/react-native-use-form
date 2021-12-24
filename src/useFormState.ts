@@ -428,7 +428,7 @@ export default function useFormState<T>(
     ),
     onLayout: layout(k, h),
     onBlur: blur(k, h),
-    value: deepGet(values, k),
+    value: deepGet(values, k) || '',
   });
 
   const numberRaw = <K extends DotNestedKeys<T>>(
