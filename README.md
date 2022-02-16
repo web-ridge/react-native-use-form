@@ -62,12 +62,11 @@ export default function App() {
       password: '',
     },
     {
-      onChange: () => {
-        // TODO: fix enum in backend
+      onChange: (latestValues) => {
+        // do something with latestValues
       },
-      onSubmit: () => {
-        console.log('no errors, submit!');
-        // alert('no errors we can submit');
+      onSubmit: (submittedValues) => {
+        // do something with submittedValues
       },
     }
   );
@@ -129,6 +128,7 @@ export default function App() {
   );
 }
 
+// you can add your own validate functions
 function looksLikeTelephone(str: string): boolean {
   if (str.length !== 10) {
     return false;
@@ -140,6 +140,7 @@ function looksLikeTelephone(str: string): boolean {
   return true;
 }
 
+// you can add your own validate functions
 function looksLikeMail(str: string): boolean {
   let lastAtPos = str.lastIndexOf('@');
   let lastDotPos = str.lastIndexOf('.');
