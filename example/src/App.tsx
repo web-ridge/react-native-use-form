@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Form, useFormState } from '../../src/index';
 import {
   Button,
@@ -63,17 +63,7 @@ export default function App() {
 
   console.log({ values, errors });
   return (
-    <View
-      style={{
-        flex: 1,
-        marginTop: 100,
-        marginLeft: 12,
-        marginRight: 12,
-        alignSelf: 'center',
-        width: 300,
-        paddingBottom: 500,
-      }}
-    >
+    <View style={styles.root}>
       <Form {...formProps}>
         <TextInput
           mode="outlined"
@@ -247,7 +237,7 @@ function AddressCompanyEdit({
     }
   );
   return (
-    <Surface {...rest}>
+    <Surface {...rest} style={{ padding: 12 }}>
       <Title>Nested form</Title>
       <Form {...formProps}>
         <TextInput mode="outlined" label="Street" {...fh.text('name')} />
@@ -274,3 +264,15 @@ function looksLikeMail(str: string): boolean {
     str.length - lastDotPos > 2
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    marginTop: 100,
+    marginLeft: 12,
+    marginRight: 12,
+    alignSelf: 'center',
+    width: 300,
+    paddingBottom: 500,
+  },
+});
