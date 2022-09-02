@@ -202,9 +202,10 @@ export function useInnerContext(skip?: boolean) {
                 .flat();
 
               const nextField = fields.find((f) => {
-                const p = f.element.props;
+                const p = f?.element?.props;
+                // TODO: fix this with function components
                 // skip disabled fields in focus
-                if ((p as any).disabled === true || p.editable === false) {
+                if ((p as any)?.disabled === true || p?.editable === false) {
                   return false;
                 }
                 // already sorted so the first one to hit above current index is the next field
