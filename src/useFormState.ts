@@ -126,7 +126,6 @@ type FormIndexKeyMap = Record<number, IndexKeyMap>;
 export type FormRefKeyMap = Record<number, RefKeyMap>;
 
 export function useInnerContext(skip?: boolean) {
-  // const formIndex = React.useRef<number>(0);
   const [lastKey, setLastKey] = useRefState<string | undefined>(undefined);
   const refIndex = React.useRef<number>(0);
 
@@ -305,20 +304,43 @@ export default function useFormState<T>(
   const [wasSubmitted, setWasSubmitted] = useRefState<boolean>(false);
   const [touched, sTouched] = useRefState<BooleanUtility<T>>({});
   const [focusedOnce, sFocusedOnce] = useRefState<BooleanUtility<T>>({});
+  const initialErrorCache = React.useRef<ErrorUtility<T>>({});
   const [errors, sErrors] = useRefState<ErrorUtility<T>>({});
   const [values, setValues] = useRefState<T>(initialState);
   const [lastCharacters, setLastCharacters] = useRefState<
     FieldsLastCharacters<T>
   >({});
 
+  React.useEffect(() => {
+    // render optimization because we don't want to re-render on every field at the beginning of the onLayout calls :)
+    const timer = setTimeout(() => {
+      sErrors(initialErrorCache.current);
+    }, 100);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [initialErrorCache, sErrors]);
+
   const setError = React.useCallback(
-    <K extends DotNestedKeys<T>>(k: K, v: boolean | string | undefined) => {
+    <K extends DotNestedKeys<T>>(
+      k: K,
+      v: boolean | string | undefined,
+      initial?: boolean
+    ) => {
       const error = deepGet(errors.current, k);
       if (v !== error) {
-        sErrors((prev) => deepSet(prev, k, v) as any);
+        if (initial) {
+          initialErrorCache.current = deepSet(
+            initialErrorCache.current || {},
+            k,
+            v
+          ) as any;
+        } else {
+          sErrors((prev) => deepSet(prev, k, v) as any);
+        }
       }
     },
-    [errors, sErrors]
+    [errors, sErrors, initialErrorCache]
   );
 
   const clearErrors = React.useCallback(() => {
@@ -330,7 +352,8 @@ export default function useFormState<T>(
       k: K,
       h: Customizing<T, K> | CustomizingRaw<T, K> | undefined,
       v: GetFieldType<T, K>,
-      allV: T
+      allV: T,
+      initial?: boolean
     ) => {
       let err: boolean | string | undefined;
 
@@ -348,7 +371,8 @@ export default function useFormState<T>(
       }
       setError(
         k,
-        err === true || err === undefined || err === null ? false : err
+        err === true || err === undefined || err === null ? false : err,
+        initial
       );
     },
     [setError]
@@ -440,7 +464,7 @@ export default function useFormState<T>(
     referencedCallback(`layout.${k}`, (e: LayoutChangeEvent) => {
       h?.onLayout?.(e);
       const value = deepGet(values.current, k);
-      checkError(k as DotNestedKeys<T>, h, value as any, values.current);
+      checkError(k as DotNestedKeys<T>, h, value as any, values.current, true);
     });
 
   const text = <K extends DotNestedKeys<T>>(
