@@ -73,9 +73,10 @@ export default function App() {
         <TextInputWithError
           mode="outlined"
           {...fh.telephone('telephone', {
-            validate: (v) => {
-              return looksLikeTelephone(v) ? true : 'Telephone is invalid';
-            },
+            required: true,
+            minLength: 3,
+            maxLength: 10,
+            shouldFollowRegexes: [telephoneRegex],
             label: 'Telephone',
           })}
         />
@@ -123,11 +124,7 @@ export default function App() {
             required: true,
             minLength: 3,
             maxLength: 10,
-            validate: (v) => {
-              return looksLikeTelephone(v || '')
-                ? true
-                : 'Telephone is invalid';
-            },
+            shouldFollowRegexes: [telephoneRegex],
             label: 'Organization telephone',
           })}
         />
@@ -213,12 +210,10 @@ function AddressCompanyEdit({
   );
 }
 
-function looksLikeTelephone(str: string): boolean {
-  if (str.length !== 10) {
-    return false;
-  }
-  return /^\d+$/.test(str);
-}
+const telephoneRegex = {
+  regex: new RegExp(/^\d+$/),
+  errorMessage: 'Telephone is invalid',
+};
 
 function looksLikeMail(str: string): boolean {
   let lastAtPos = str.lastIndexOf('@');

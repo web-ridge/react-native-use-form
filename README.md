@@ -127,6 +127,7 @@ export default function App() {
         <TextInputWithError
           mode="outlined"
           {...email('email', {
+
             validate: (v) => {
               return looksLikeMail(v) ? true : 'Email-address is invalid';
             },
@@ -136,10 +137,10 @@ export default function App() {
         <TextInputWithError
           mode="outlined"
           {...telephone('telephone', {
-            validate: (v) => {
-              console.log({ v });
-              return looksLikeTelephone(v) ? true : 'Telephone is invalid';
-            },
+            required: true,
+            minLength: 3,
+            maxLength: 10,
+            shouldFollowRegexes: [telephoneRegex],
             label: "Telefoon"
           })}
         />
@@ -174,17 +175,10 @@ function TextInputWithError({ errorMessage, ...rest }: React.ComponentProps<type
 }
 
 
-// you can add your own validate functions
-function looksLikeTelephone(str: string): boolean {
-  if (str.length !== 10) {
-    return false;
-  }
-  let isNum = /^\d+$/.test(str);
-  if (!isNum) {
-    return false;
-  }
-  return true;
-}
+const telephoneRegex = {
+  regex: new RegExp(/^\d+$/),
+  errorMessage: 'Telephone is invalid',
+};
 
 // you can add your own validate functions
 function looksLikeMail(str: string): boolean {
