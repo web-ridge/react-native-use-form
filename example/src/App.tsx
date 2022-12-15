@@ -2,13 +2,8 @@ import * as React from 'react';
 
 import { StyleSheet, View } from 'react-native';
 import { Form, useFormState } from '../../src/index';
-import {
-  Button,
-  HelperText,
-  Surface,
-  TextInput,
-  Title,
-} from 'react-native-paper';
+import { Button, Surface, TextInput, Title } from 'react-native-paper';
+import TextInputWithError from './TextInputWithError';
 
 type AddressCompany = {
   name: string;
@@ -65,83 +60,64 @@ export default function App() {
   return (
     <View style={styles.root}>
       <Form {...formProps}>
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           error={hasError('email')}
           {...fh.email('email', {
             validate: (v) => {
               return looksLikeMail(v) ? true : 'Email-address is invalid';
             },
+            label: 'Email',
           })}
-          label="E-mail"
         />
-        <HelperText type="error" visible={hasError('email')}>
-          {errors.email}
-        </HelperText>
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...fh.telephone('telephone', {
             validate: (v) => {
               return looksLikeTelephone(v) ? true : 'Telephone is invalid';
             },
+            label: 'Telephone',
           })}
-          label="Telephone"
-          error={hasError('telephone')}
         />
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...fh.text('postalCode', {
             enhance: (v) => {
               return (v || '').toUpperCase();
             },
-            // validate: (v) => {
-            //   return looksLikeTelephone(v || '')
-            //     ? true
-            //     : 'Telephone is invalid';
-            // },
+            label: 'Postalcode',
           })}
-          label="Postalcode"
-          error={hasError('postalCode')}
         />
-        <HelperText type="error" visible={hasError('telephone')}>
-          {errors.postalCode}
-        </HelperText>
 
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...fh.password('password', {
             required: true,
             minLength: 3,
             maxLength: 10,
+            label: 'Password',
           })}
-          label="Password"
-          error={hasError('password')}
         />
-        <HelperText type="error" visible={hasError('password')}>
-          {errors.password}
-        </HelperText>
 
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...fh.number('age', {
             required: true,
             minLength: 3,
             maxLength: 10,
+            label: 'Age',
           })}
-          label="Age"
-          error={hasError('age')}
         />
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...fh.decimal('money', {
             required: true,
             minLength: 3,
             maxLength: 10,
+            label: 'Money bank account',
           })}
-          label="Money bank account"
-          error={hasError('money')}
         />
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...fh.text('organization.telephone', {
             required: true,
@@ -152,14 +128,10 @@ export default function App() {
                 ? true
                 : 'Telephone is invalid';
             },
+            label: 'Organization telephone',
           })}
-          label="Organization telephone"
-          error={hasError('organization.telephone')}
         />
-        <HelperText type="error" visible={hasError('organization.telephone')}>
-          {errors.organization?.telephone}
-        </HelperText>
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...fh.number('organization.revenue', {
             required: true,
@@ -171,14 +143,9 @@ export default function App() {
               }
               return undefined;
             },
+            label: 'Organization revenue',
           })}
-          label="Organization revenue"
-          error={hasError('organization.revenue')}
         />
-        <HelperText type="error" visible={hasError('organization.revenue')}>
-          {errors.organization?.revenue}
-        </HelperText>
-
         <AddressEdit {...fh.raw('address')} />
         <AddressCompanyEdit {...fh.raw('address.company')} />
         <Button mode="contained" onPress={submit} style={{ marginTop: 24 }}>

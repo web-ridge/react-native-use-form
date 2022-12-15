@@ -20,6 +20,7 @@ import type {
 } from './types';
 import type { SetStateAction } from 'react';
 import useRefState from './useRefState';
+import { defaultLocale, getTranslation } from './translations/utils';
 
 type FormTextInputProps = {
   testID: string;
@@ -34,6 +35,9 @@ type FormTextInputProps = {
   autoCapitalize?: TextInputProps['autoCapitalize'];
   autoCorrect?: TextInputProps['autoCorrect'];
   selectTextOnFocus?: TextInputProps['selectTextOnFocus'];
+  error?: boolean;
+  errorMessage?: string | undefined;
+  label?: string;
 };
 
 type FormRawProps<V> = {
@@ -42,31 +46,36 @@ type FormRawProps<V> = {
   onChange: (v: V) => void;
   onBlur: TextInputProps['onBlur'];
   onLayout: TextInputProps['onLayout'];
+  error: boolean;
+  errorMessage: string | undefined;
 };
 
-type Customizing<T, K extends DotNestedKeys<T>> = {
+interface BaseCustomizing<T, K extends DotNestedKeys<T>> {
+  label?: string;
   required?: boolean;
+  shouldFollowRegexes?: {
+    regex: RegExp;
+    errorMessage: string;
+  }[];
   minLength?: number;
   maxLength?: number;
   validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
   enhanceValues?: (v: GetFieldType<T, K>, values: T) => T;
   enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
+}
+interface Customizing<T, K extends DotNestedKeys<T>>
+  extends BaseCustomizing<T, K> {
   onChangeText?: TextInputProps['onChangeText'];
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
-};
+}
 
-type CustomizingRaw<T, K extends DotNestedKeys<T>> = {
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
-  enhanceValues?: (v: GetFieldType<T, K>, values: T) => T;
-  enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
+interface CustomizingRaw<T, K extends DotNestedKeys<T>>
+  extends BaseCustomizing<T, K> {
   onChange?: (v: GetFieldType<T, K>) => void;
   onBlur?: TextInputProps['onBlur'];
   onLayout?: TextInputProps['onLayout'];
-};
+}
 
 type FormRawType<T> = <K extends DotNestedKeysWithRoot<T>>(
   key: K,
@@ -225,6 +234,7 @@ export function useInnerContext(skip?: boolean) {
 export default function useFormState<T>(
   initialState: T,
   options?: {
+    locale?: string;
     enhance?: (newValues: T, extra: { previousValues: T }) => T;
     onChange?: (
       newState: T,
@@ -283,6 +293,7 @@ export default function useFormState<T>(
     raw: FormRawType<T>;
   }
 ] {
+  const locale = options?.locale || defaultLocale;
   const onChange = useLatest(options?.onChange);
   const onSubmit = useLatest(options?.onSubmit);
   const enhance = useLatest(options?.enhance);
@@ -358,13 +369,46 @@ export default function useFormState<T>(
       let err: boolean | string | undefined;
 
       if (h) {
-        // TODO: add locale support
         if (h?.required === true && !v) {
-          err = `${k} is required`;
+          err = getTranslation(
+            locale,
+            'required'
+          )({
+            fieldKey: k,
+            label: h?.label,
+          });
         } else if (h.minLength !== undefined && `${v}`.length < h.minLength) {
-          err = `${k} length should be longer than ${h.minLength}`;
+          err = getTranslation(
+            locale,
+            'lengtShouldBeLongerThan'
+          )({
+            fieldKey: k,
+            label: h?.label,
+            requiredLength: h.minLength,
+          });
         } else if (h.maxLength !== undefined && `${v}`.length > h.maxLength) {
-          err = `${k} length should be less than ${h.maxLength}`;
+          err = getTranslation(
+            locale,
+            'lengthShouldBeShorterThan'
+          )({
+            fieldKey: k,
+            label: h?.label,
+            requiredLength: h.maxLength,
+          });
+        } else if (h.shouldFollowRegexes) {
+          for (let { regex, errorMessage } of h.shouldFollowRegexes) {
+            if (!regex.test(`${v}`)) {
+              err = getTranslation(
+                locale,
+                'shouldFollowRegex'
+              )({
+                fieldKey: k,
+                label: h?.label,
+                errorMessage,
+              });
+              break;
+            }
+          }
         } else if (h.validate) {
           err = h.validate?.(v, allV);
         }
@@ -375,7 +419,7 @@ export default function useFormState<T>(
         initial
       );
     },
-    [setError]
+    [locale, setError]
   );
 
   const setTouched = React.useCallback(
@@ -409,15 +453,12 @@ export default function useFormState<T>(
       setValues(enhancedNewValues);
       checkError(k, h, enhancedV!, enhancedNewValues);
       setTouched(k, true);
-      // prevent endless re-render if called on nested form
-      // TODO: not needed anymore probably test it out
-      // setTimeout(() => {
+
       onChange.current?.(enhancedNewValues, {
         touched: touched.current,
         focusedOnce: focusedOnce.current,
         errors: errors.current,
       });
-      // }, 0);
     },
     [
       checkError,
@@ -470,16 +511,20 @@ export default function useFormState<T>(
   const text = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
-  ): FormTextInputProps => ({
-    ...ctx.referencer(k, ctx.formIndex),
-    testID: k,
-    onChangeText: referencedCallback(`text.${k}`, (n: GetFieldType<T, K>) =>
-      changeValue(k, n, h)
-    ),
-    onLayout: layout(k, h),
-    onBlur: blur(k, h),
-    value: deepGet(values.current, k) || '',
-  });
+  ): FormTextInputProps =>
+    removeEmpty({
+      ...ctx.referencer(k, ctx.formIndex),
+      testID: k,
+      onChangeText: referencedCallback(`text.${k}`, (n: GetFieldType<T, K>) =>
+        changeValue(k, n, h)
+      ),
+      onLayout: layout(k, h),
+      onBlur: blur(k, h),
+      value: deepGet(values.current, k) || '',
+      error: hasError(k),
+      errorMessage: deepGet(errors.current, k),
+      label: h?.label,
+    });
 
   const numberRaw = <K extends DotNestedKeys<T>>(
     k: K,
@@ -491,7 +536,7 @@ export default function useFormState<T>(
       separationCharacter
     );
 
-    return {
+    return removeEmpty({
       ...ctx.referencer(k, ctx.formIndex),
       testID: k,
       onChangeText: referencedCallback(`number.${k}`, (n: string) => {
@@ -516,7 +561,11 @@ export default function useFormState<T>(
       onBlur: blur(k, h),
       onLayout: layout(k, h),
       value: `${value || ''}${deepGet(lastCharacters.current, k) || ''}`,
-    };
+
+      error: hasError(k),
+      errorMessage: deepGet(errors.current, k),
+      label: h?.label,
+    });
   };
 
   const number = <K extends DotNestedKeys<T>>(
@@ -625,6 +674,9 @@ export default function useFormState<T>(
     secureTextEntry: true,
     autoCorrect: false,
     selectTextOnFocus: Platform.OS !== 'web',
+    label: h?.label,
+    errorMessage: deepGet(errors.current, k),
+    error: hasError(k),
   });
 
   const email = <K extends DotNestedKeys<T>>(
@@ -680,6 +732,8 @@ export default function useFormState<T>(
     value: deepGet(values.current, k),
     onLayout: layout(k, h as any),
     onBlur: blur(k, h as any),
+    error: hasError(k),
+    errorMessage: deepGet(errors.current, k),
   });
 
   return [
@@ -800,4 +854,9 @@ function isObject<T>(val: T) {
     return false;
   }
   return typeof val === 'function' || typeof val === 'object';
+}
+function removeEmpty<T>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v !== undefined)
+  ) as any;
 }

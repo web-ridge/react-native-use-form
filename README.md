@@ -42,6 +42,47 @@ or
 npm install react-native-use-form
 ```
 
+
+
+## Import some localized strings
+Ideally you do this somewhere in your `index.js` before `react-native-paper-dates` is used.
+Currently we have en/nl/de/pl/pt/ar/ko/fr translations but it's really easy to add one extra since it are only some labels and error messages.
+
+```tsx
+// e.g in your index.js
+import {
+  en,
+  registerTranslation,
+  registerDefaultLocale
+} from 'react-native-use-form'
+registerTranslation('en', en)
+// you can override the locale per form
+registerDefaultLocale('en') // optional (default = en)
+// registerTranslation('nl', nl)
+```
+
+### or register your own
+Please send a PR with your language to make sure all locales are there next time
+```tsx
+import {
+  registerTranslation,
+} from 'react-native-use-form'
+registerTranslation("en", {
+  required: (params) => `${params.fieldKey || params.fieldKey} is required`,
+  lengtShouldBeLongerThan: (params) =>
+    `${params.fieldKey || params.fieldKey} length should be longer than ${
+      params.requiredLength
+    }`,
+  lengthShouldBeShorterThan: (params) =>
+    `${params.fieldKey || params.fieldKey} length should be shorter than ${
+      params.requiredLength
+    }`,
+  shouldFollowRegex: (params) =>
+    params.errorMessage ||
+    `${params.fieldKey || params.fieldKey} is not in the right format`,
+})
+```
+
 ## Usage
 ```tsx
 
@@ -50,6 +91,9 @@ import * as React from 'react';
 import { View } from 'react-native';
 import { useFormState, Form } from 'react-native-use-form';
 import { Button, HelperText, TextInput } from 'react-native-paper';
+
+
+
 
 export default function App() {
   const [
@@ -62,8 +106,9 @@ export default function App() {
       password: '',
     },
     {
+      locale: 'en', // optional override
       onChange: (latestValues) => {
-        // do something with latestValues
+        // optional: do something with latestValues
       },
       onSubmit: (submittedValues) => {
         // do something with submittedValues
@@ -79,47 +124,34 @@ export default function App() {
       }}
     >
       <Form {...formProps}>
-        <TextInput
+        <TextInputWithError
           mode="outlined"
-          error={hasError('email')}
           {...email('email', {
             validate: (v) => {
               return looksLikeMail(v) ? true : 'Email-address is invalid';
             },
+            label: "E-mail"
           })}
-          label="E-mail"
         />
-        <HelperText type="error" visible={hasError('email')}>
-          {errors.email}
-        </HelperText>
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...telephone('telephone', {
             validate: (v) => {
               console.log({ v });
               return looksLikeTelephone(v) ? true : 'Telephone is invalid';
             },
+            label: "Telefoon"
           })}
-          label="Telefoon"
-          error={hasError('telephone')}
         />
-        <HelperText type="error" visible={hasError('telephone')}>
-          {errors.telephone}
-        </HelperText>
-
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           {...password('password', {
             required: true,
             minLength: 3,
             maxLength: 10,
+            label: "Wachtwoord"
           })}
-          label="Wachtwoord"
-          error={hasError('password')}
         />
-        <HelperText type="error" visible={hasError('password')}>
-          {errors.password}
-        </HelperText>
         <Button mode="contained" onPress={submit}>
           Save
         </Button>
@@ -127,6 +159,20 @@ export default function App() {
     </View>
   );
 }
+
+
+
+function TextInputWithError({ errorMessage, ...rest }: React.ComponentProps<typeof TextInput> & { errorMessage?: string }) {
+  return (
+    <>
+      <TextInput {...rest} />
+      <HelperText type="error" visible={rest.error}>
+        {errorMessage || ' '}
+      </HelperText>
+    </>
+  );
+}
+
 
 // you can add your own validate functions
 function looksLikeTelephone(str: string): boolean {

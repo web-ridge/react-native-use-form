@@ -1,8 +1,7 @@
 import { registerRootComponent } from 'expo';
 
 import App from './src/App';
-
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in the Expo client or in a native build,
-// the environment is set up appropriately
+import { en, registerTranslation, registerDefaultLocale } from '../src/index';
+registerTranslation('en', en);
+registerDefaultLocale('en');
 registerRootComponent(App);
