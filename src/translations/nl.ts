@@ -1,7 +1,7 @@
 import type { TranslationsType } from './utils';
 
 const nl: TranslationsType = {
-  required: (params) => `${params.label || params.fieldKey} is required`,
+  required: (params) => `${params.label || params.fieldKey} is verplicht`,
   lengtShouldBeLongerThan: (params) =>
     `${params.label || params.fieldKey} moet langer zijn dan ${
       params.requiredLength

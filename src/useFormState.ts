@@ -838,7 +838,7 @@ function checkErrorObject(errors: any) {
   for (let key of keys) {
     if (isObject(errors[key])) {
       if (checkErrorObject(errors[key])) {
-        return false;
+        return true;
       }
     } else {
       if (!!errors[key]) {

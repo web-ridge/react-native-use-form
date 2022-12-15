@@ -174,7 +174,7 @@ function AddressEdit({
         <TextInput
           mode="outlined"
           label="Street"
-          {...fh.streetAddress('street')}
+          {...fh.streetAddress('street', { required: true })}
         />
         <TextInput
           mode="outlined"
