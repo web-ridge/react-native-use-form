@@ -6,6 +6,9 @@ import {
   TextInputFocusEventData,
   TextInputProps,
   Platform,
+  ScrollView,
+  LayoutRectangle,
+  View,
 } from 'react-native';
 
 import { FormContext, FormContextType } from './FormContext';
@@ -29,7 +32,7 @@ type FormTextInputProps = {
   onLayout: TextInputProps['onLayout'];
   onChangeText: TextInputProps['onChangeText'];
   textContentType?: TextInputProps['textContentType'];
-  autoCompleteType?: TextInputProps['autoCompleteType'];
+  autoComplete?: TextInputProps['autoComplete'];
   keyboardType?: TextInputProps['keyboardType'];
   secureTextEntry?: TextInputProps['secureTextEntry'];
   autoCapitalize?: TextInputProps['autoCapitalize'];
@@ -73,12 +76,15 @@ interface Customizing<T, K extends DotNestedKeys<T>>
 interface CustomizingRaw<T, K extends DotNestedKeys<T>>
   extends BaseCustomizing<T, K> {
   onChange?: (v: GetFieldType<T, K>) => void;
-  onBlur?: TextInputProps['onBlur'];
-  onLayout?: TextInputProps['onLayout'];
+  onBlur?:
+    | ((e: NativeSyntheticEvent<TextInputFocusEventData>) => void)
+    | undefined;
+  onLayout?: ((event: LayoutChangeEvent) => void) | undefined;
 }
 
 type FormRawType<T> = <K extends DotNestedKeysWithRoot<T>>(
   key: K,
+  //@ts-ignore
   handlers?: CustomizingRaw<T, K>
 ) => FormRawProps<GetFieldType<T, K>>;
 
@@ -234,6 +240,15 @@ export function useInnerContext(skip?: boolean) {
 export default function useFormState<T>(
   initialState: T,
   options?: {
+    scrollViewRef?:
+      | React.RefObject<{
+          scrollTo: ScrollView['scrollTo'];
+          measure?: View['measure'];
+          measureLayout?: View['measureLayout'];
+          measureInWindow?: View['measureInWindow'];
+        }>
+      | undefined
+      | null;
     locale?: string;
     enhance?: (newValues: T, extra: { previousValues: T }) => T;
     onChange?: (
@@ -254,6 +269,7 @@ export default function useFormState<T>(
   }
 ): [
   {
+    wasSubmitted: boolean;
     hasErrors: boolean;
     values: T;
     errors: ErrorUtility<T>;
@@ -294,6 +310,7 @@ export default function useFormState<T>(
     raw: FormRawType<T>;
   }
 ] {
+  const layoutsRef = React.useRef<Record<string, LayoutRectangle>>({});
   const locale = options?.locale || defaultLocale;
   const onChange = useLatest(options?.onChange);
   const onSubmit = useLatest(options?.onSubmit);
@@ -474,10 +491,27 @@ export default function useFormState<T>(
     ]
   );
 
+  const scrollViewRef = options?.scrollViewRef;
   const submit = React.useCallback(() => {
     setWasSubmitted(true);
     // if it returns an object there are errors
     if (checkErrorObject(errors.current)) {
+      if (scrollViewRef?.current) {
+        const errorKeys = Object.keys(layoutsRef.current).filter(
+          (k) => !!deepGet(errors.current, k)
+        )!;
+        const firstErrorY = Math.min(
+          ...errorKeys.map((key) => layoutsRef.current[key].y)
+        );
+
+        if (firstErrorY) {
+          const extraPaddingTop = 24;
+          scrollViewRef.current.scrollTo({
+            y: firstErrorY - extraPaddingTop,
+            animated: true,
+          });
+        }
+      }
       return;
     }
 
@@ -485,7 +519,15 @@ export default function useFormState<T>(
       touched: touched.current,
       focusedOnce: focusedOnce.current,
     });
-  }, [setWasSubmitted, errors, onSubmit, values, touched, focusedOnce]);
+  }, [
+    setWasSubmitted,
+    scrollViewRef,
+    errors,
+    onSubmit,
+    values,
+    touched,
+    focusedOnce,
+  ]);
 
   const blur = <K extends DotNestedKeys<T>>(
     k: K,
@@ -505,6 +547,43 @@ export default function useFormState<T>(
   ): TextInputProps['onLayout'] =>
     referencedCallback(`layout.${k}`, (e: LayoutChangeEvent) => {
       h?.onLayout?.(e);
+
+      if (scrollViewRef?.current) {
+        if (Platform.OS === 'web') {
+          const target = (e.nativeEvent as any).target as any;
+          let rect = target.getBoundingClientRect();
+          let scrollRect = (scrollViewRef.current as any).getBoundingClientRect();
+
+          layoutsRef.current = {
+            ...layoutsRef.current,
+            [k]: { x: rect.x, y: rect.y - scrollRect.y },
+          };
+        } else {
+          ((e as any).target as View).measure(
+            (_x, y, _width, _height, pageX, pageY) => {
+              scrollViewRef.current!.measure!(
+                (
+                  _scrollX,
+                  _scrollY,
+                  _scrollWidth,
+                  _scrollHeight,
+                  _scrollPageX,
+                  scrollPageY
+                ) => {
+                  layoutsRef.current = {
+                    ...layoutsRef.current,
+                    [k]: {
+                      x: pageX,
+                      y: pageY + y - scrollPageY,
+                    },
+                  };
+                }
+              );
+            }
+          );
+        }
+      }
+
       const value = deepGet(values.current, k);
       checkError(k as DotNestedKeys<T>, h, value as any, values.current, true);
     });
@@ -608,7 +687,7 @@ export default function useFormState<T>(
     ...text(k, h),
     autoCapitalize: 'characters',
     textContentType: 'postalCode',
-    autoCompleteType: 'postal-code',
+    autoComplete: 'postal-code',
     autoCorrect: false,
   });
 
@@ -618,7 +697,7 @@ export default function useFormState<T>(
   ): FormTextInputProps => ({
     ...text(k, h),
     autoCapitalize: 'words',
-    autoCompleteType: 'street-address',
+    autoComplete: 'street-address',
     autoCorrect: false,
   });
 
@@ -638,7 +717,7 @@ export default function useFormState<T>(
   ): FormTextInputProps => ({
     ...text(k, h),
     textContentType: 'telephoneNumber',
-    autoCompleteType: 'tel',
+    autoComplete: 'tel',
     keyboardType: 'phone-pad',
     autoCorrect: false,
   });
@@ -649,7 +728,7 @@ export default function useFormState<T>(
   ): FormTextInputProps => ({
     ...text(k, h),
     autoCapitalize: 'words',
-    autoCompleteType: 'name',
+    autoComplete: 'name',
     autoCorrect: false,
   });
 
@@ -659,7 +738,7 @@ export default function useFormState<T>(
   ): FormTextInputProps => ({
     ...text(k, h),
     textContentType: 'username',
-    autoCompleteType: 'username',
+    autoComplete: 'username',
     autoCapitalize: 'none',
     autoCorrect: false,
     selectTextOnFocus: Platform.OS !== 'web',
@@ -671,7 +750,7 @@ export default function useFormState<T>(
   ): FormTextInputProps => ({
     ...text(k, h),
     textContentType: 'password',
-    autoCompleteType: 'password',
+    autoComplete: 'password',
     secureTextEntry: true,
     autoCorrect: false,
     selectTextOnFocus: Platform.OS !== 'web',
@@ -686,7 +765,7 @@ export default function useFormState<T>(
   ): FormTextInputProps => ({
     ...text(k, h),
     textContentType: 'emailAddress',
-    autoCompleteType: 'email',
+    autoComplete: 'email',
     keyboardType: 'email-address',
     autoCapitalize: 'none',
     autoCorrect: false,
@@ -737,8 +816,12 @@ export default function useFormState<T>(
     errorMessage: deepGet(errors.current, k),
   });
 
+  // @ts-ignore
   return [
+    // @ts-ignore
     {
+      // @ts-ignore
+      wasSubmitted: wasSubmitted.current,
       hasErrors: checkErrorObject(errors.current),
       values: values.current,
       errors: errors.current,
@@ -857,7 +940,9 @@ function isObject<T>(val: T) {
   }
   return typeof val === 'function' || typeof val === 'object';
 }
-function removeEmpty<T>(obj: T): T {
+function removeEmpty<T extends { [s: string]: unknown } | ArrayLike<unknown>>(
+  obj: T
+): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([_, v]) => v !== undefined)
   ) as any;

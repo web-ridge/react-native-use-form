@@ -1,16 +1,28 @@
 import { HelperText, TextInput } from 'react-native-paper';
+import type { TextInputProps } from 'react-native';
 import * as React from 'react';
 
-export default function TextInputWithError({
-  errorMessage,
-  ...rest
-}: React.ComponentProps<typeof TextInput> & { errorMessage?: string }) {
+function TextInputWithError(
+  {
+    errorMessage,
+    ...rest
+  }: TextInputProps & {
+    errorMessage?: string;
+    mode?: any;
+    label?: string;
+    error?: boolean;
+  },
+  ref: any
+) {
   return (
     <>
-      <TextInput {...rest} />
+      {/*// @ts-ignore*/}
+      <TextInput {...rest} ref={ref} />
+      {/*// @ts-ignore*/}
       <HelperText type="error" visible={rest.error}>
         {errorMessage || ' '}
       </HelperText>
     </>
   );
 }
+export default React.forwardRef(TextInputWithError);

@@ -26,7 +26,7 @@ export function useRefState<S>(
   const [reactState, setReactState] = React.useState(initialState);
   const state = React.useRef(reactState);
   const setState = React.useCallback(
-    (arg) => {
+    (arg: any) => {
       if (!mounted.current && blockIfUnmounted) return;
       state.current = typeof arg === 'function' ? arg(state.current) : arg;
       setReactState(state.current);

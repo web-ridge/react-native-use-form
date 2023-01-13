@@ -1,9 +1,10 @@
 import * as React from 'react';
 
-import { StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Form, useFormState } from '../../src/index';
-import { Button, Surface, TextInput, Title } from 'react-native-paper';
+import { Appbar, Button, Surface, Title } from 'react-native-paper';
 import TextInputWithError from './TextInputWithError';
+import { useRef } from 'react';
 
 type AddressCompany = {
   name: string;
@@ -28,10 +29,8 @@ type FormType = {
   address?: AddressType | null;
 };
 export default function App() {
-  const [
-    { values, errors, submit, formProps, hasError },
-    fh,
-  ] = useFormState<FormType>(
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [{ submit, formProps, hasError }, fh] = useFormState<FormType>(
     {
       email: '',
       telephone: '',
@@ -46,6 +45,7 @@ export default function App() {
       },
     },
     {
+      scrollViewRef: scrollViewRef,
       onChange: () => {
         // TODO: fix enum in backend
       },
@@ -56,99 +56,106 @@ export default function App() {
     }
   );
 
-  console.log({ values, errors });
+  // console.log({ values, errors });
   return (
     <View style={styles.root}>
-      <Form {...formProps}>
-        <TextInputWithError
-          mode="outlined"
-          error={hasError('email')}
-          {...fh.email('email', {
-            validate: (v) => {
-              return looksLikeMail(v) ? true : 'Email-address is invalid';
-            },
-            label: 'Email',
-          })}
-        />
-        <TextInputWithError
-          mode="outlined"
-          {...fh.telephone('telephone', {
-            required: true,
-            minLength: 3,
-            maxLength: 10,
-            shouldFollowRegexes: [telephoneRegex],
-            label: 'Telephone',
-          })}
-        />
-        <TextInputWithError
-          mode="outlined"
-          {...fh.text('postalCode', {
-            enhance: (v) => {
-              return (v || '').toUpperCase();
-            },
-            label: 'Postalcode',
-          })}
-        />
+      <Appbar.Header>
+        <Appbar.Content title="Form" />
+      </Appbar.Header>
+      <ScrollView style={styles.scrollView} ref={scrollViewRef}>
+        <View style={styles.inner}>
+          <Form {...formProps}>
+            <TextInputWithError
+              mode="outlined"
+              error={hasError('email')}
+              {...fh.email('email', {
+                validate: (v) => {
+                  return looksLikeMail(v) ? true : 'Email-address is invalid';
+                },
+                label: 'Email',
+              })}
+            />
+            <TextInputWithError
+              mode="outlined"
+              {...fh.telephone('telephone', {
+                required: true,
+                minLength: 3,
+                maxLength: 10,
+                shouldFollowRegexes: [telephoneRegex],
+                label: 'Telephone',
+              })}
+            />
+            <TextInputWithError
+              mode="outlined"
+              {...fh.text('postalCode', {
+                enhance: (v) => {
+                  return (v || '').toUpperCase();
+                },
+                label: 'Postalcode',
+              })}
+            />
 
-        <TextInputWithError
-          mode="outlined"
-          {...fh.password('password', {
-            required: true,
-            minLength: 3,
-            maxLength: 10,
-            label: 'Password',
-          })}
-        />
+            <TextInputWithError
+              mode="outlined"
+              {...fh.password('password', {
+                required: true,
+                minLength: 3,
+                maxLength: 10,
+                label: 'Password',
+              })}
+            />
 
-        <TextInputWithError
-          mode="outlined"
-          {...fh.number('age', {
-            required: true,
-            minLength: 3,
-            maxLength: 10,
-            label: 'Age',
-          })}
-        />
-        <TextInputWithError
-          mode="outlined"
-          {...fh.decimal('money', {
-            required: true,
-            minLength: 3,
-            maxLength: 10,
-            label: 'Money bank account',
-          })}
-        />
-        <TextInputWithError
-          mode="outlined"
-          {...fh.text('organization.telephone', {
-            required: true,
-            minLength: 3,
-            maxLength: 10,
-            shouldFollowRegexes: [telephoneRegex],
-            label: 'Organization telephone',
-          })}
-        />
-        <TextInputWithError
-          mode="outlined"
-          {...fh.number('organization.revenue', {
-            required: true,
-            minLength: 3,
-            maxLength: 10,
-            validate: (v) => {
-              if (v < 10) {
-                return 'revenue too low';
-              }
-              return undefined;
-            },
-            label: 'Organization revenue',
-          })}
-        />
-        <AddressEdit {...fh.raw('address')} />
-        <AddressCompanyEdit {...fh.raw('address.company')} />
-        <Button mode="contained" onPress={submit} style={{ marginTop: 24 }}>
-          Save
-        </Button>
-      </Form>
+            <TextInputWithError
+              mode="outlined"
+              {...fh.number('age', {
+                required: true,
+                minLength: 3,
+                maxLength: 10,
+                label: 'Age',
+              })}
+            />
+            <TextInputWithError
+              mode="outlined"
+              {...fh.decimal('money', {
+                required: true,
+                minLength: 3,
+                maxLength: 10,
+                label: 'Money bank account',
+              })}
+            />
+            <TextInputWithError
+              mode="outlined"
+              {...fh.text('organization.telephone', {
+                required: true,
+                minLength: 3,
+                maxLength: 10,
+                shouldFollowRegexes: [telephoneRegex],
+                label: 'Organization telephone',
+              })}
+            />
+            <TextInputWithError
+              mode="outlined"
+              {...fh.number('organization.revenue', {
+                required: true,
+                minLength: 3,
+                maxLength: 10,
+                validate: (v) => {
+                  if (v < 10) {
+                    return 'revenue too low';
+                  }
+                  return undefined;
+                },
+                label: 'Organization revenue',
+              })}
+            />
+            <AddressEdit {...fh.raw('address')} />
+            <AddressCompanyEdit {...fh.raw('address.company')} />
+            <Button mode="contained" onPress={submit} style={{ marginTop: 24 }}>
+              Save
+            </Button>
+          </Form>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -171,12 +178,12 @@ function AddressEdit({
     <Surface {...rest}>
       <Title>Nested form</Title>
       <Form {...formProps}>
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           label="Street"
           {...fh.streetAddress('street', { required: true })}
         />
-        <TextInput
+        <TextInputWithError
           mode="outlined"
           label="House number"
           {...fh.streetAddress('houseNumber')}
@@ -204,7 +211,11 @@ function AddressCompanyEdit({
     <Surface {...rest} style={{ padding: 12 }}>
       <Title>Nested form</Title>
       <Form {...formProps}>
-        <TextInput mode="outlined" label="Street" {...fh.text('name')} />
+        <TextInputWithError
+          mode="outlined"
+          label="Street"
+          {...fh.text('name')}
+        />
       </Form>
     </Surface>
   );
@@ -228,8 +239,11 @@ function looksLikeMail(str: string): boolean {
 }
 
 const styles = StyleSheet.create({
-  root: {
+  root: { flex: 1, maxHeight: Platform.OS === 'web' ? '100vh' : undefined },
+  scrollView: {
     flex: 1,
+  },
+  inner: {
     marginTop: 100,
     marginLeft: 12,
     marginRight: 12,
