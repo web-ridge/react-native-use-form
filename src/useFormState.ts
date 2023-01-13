@@ -254,6 +254,7 @@ export default function useFormState<T>(
   }
 ): [
   {
+    hasErrors: boolean;
     values: T;
     errors: ErrorUtility<T>;
     touched: BooleanUtility<T>;
@@ -738,6 +739,7 @@ export default function useFormState<T>(
 
   return [
     {
+      hasErrors: checkErrorObject(errors.current),
       values: values.current,
       errors: errors.current,
       touched: touched.current,
