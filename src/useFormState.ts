@@ -25,7 +25,7 @@ import type { SetStateAction } from 'react';
 import useRefState from './useRefState';
 import { defaultLocale, getTranslation } from './translations/utils';
 
-type FormTextInputProps = {
+export type FormTextInputProps = {
   testID: string;
   value: string;
   onBlur: TextInputProps['onBlur'];
@@ -43,7 +43,7 @@ type FormTextInputProps = {
   label?: string;
 };
 
-type FormRawProps<V> = {
+export type FormRawProps<V> = {
   testID: string;
   value: V;
   onChange: (v: V) => void;
