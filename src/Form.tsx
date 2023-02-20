@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { FormContext } from './FormContext';
-import type { IndexerType, ReferencerType } from './useFormState';
+import type { IndexerType, ReferencerType } from './types';
 
 export default function Form({
   children,

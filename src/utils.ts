@@ -34,3 +34,45 @@ export function useLatest<T>(value: T): { readonly current: T } {
   ref.current = value;
   return ref;
 }
+
+export function reverse(str: string) {
+  let reversed = '';
+  for (let character of str) {
+    reversed = character + reversed;
+  }
+  return reversed;
+}
+
+export function isEmptyNumber(str: number) {
+  return !str && str !== 0;
+}
+
+export function checkErrorObject(errors: any) {
+  const keys = Object.keys(errors);
+  for (let key of keys) {
+    if (isObject(errors[key])) {
+      if (checkErrorObject(errors[key])) {
+        return true;
+      }
+    } else {
+      if (errors[key]) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isObject<T>(val: T) {
+  if (val === null) {
+    return false;
+  }
+  return typeof val === 'function' || typeof val === 'object';
+}
+export function removeEmpty<
+  T extends { [s: string]: unknown } | ArrayLike<unknown>
+>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v !== undefined)
+  ) as any;
+}

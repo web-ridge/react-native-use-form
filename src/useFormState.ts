@@ -11,231 +11,31 @@ import {
   View,
 } from 'react-native';
 
-import { FormContext, FormContextType } from './FormContext';
-import { useLatest, useReferencedCallback } from './utils';
+import {
+  checkErrorObject,
+  isEmptyNumber,
+  removeEmpty,
+  useLatest,
+  useReferencedCallback,
+} from './utils';
 import { deepSet, deepGet } from './objectPath';
 import type {
   ErrorUtility,
   DotNestedKeys,
   GetFieldType,
   BooleanUtility,
-  DotNestedKeysWithRoot,
+  FormStateType,
+  FormInputsType,
+  FieldsLastCharacters,
+  CustomizingRaw,
+  Customizing,
+  FormTextInputProps,
 } from './types';
-import type { SetStateAction } from 'react';
 import useRefState from './useRefState';
-import { defaultLocale, getTranslation } from './translations/utils';
-
-export type FormTextInputProps = {
-  testID: string;
-  value: string;
-  onBlur: TextInputProps['onBlur'];
-  onLayout: TextInputProps['onLayout'];
-  onChangeText: TextInputProps['onChangeText'];
-  textContentType?: TextInputProps['textContentType'];
-  autoComplete?: TextInputProps['autoComplete'];
-  keyboardType?: TextInputProps['keyboardType'];
-  secureTextEntry?: TextInputProps['secureTextEntry'];
-  autoCapitalize?: TextInputProps['autoCapitalize'];
-  autoCorrect?: TextInputProps['autoCorrect'];
-  selectTextOnFocus?: TextInputProps['selectTextOnFocus'];
-  error?: boolean;
-  errorMessage?: string | undefined;
-  label?: string;
-};
-
-export type FormRawProps<V> = {
-  testID: string;
-  value: V;
-  onChange: (v: V) => void;
-  onBlur: TextInputProps['onBlur'];
-  onLayout: TextInputProps['onLayout'];
-  error: boolean;
-  errorMessage: string | undefined;
-};
-
-interface BaseCustomizing<T, K extends DotNestedKeys<T>> {
-  label?: string;
-  required?: boolean;
-  shouldFollowRegexes?: {
-    regex: RegExp;
-    errorMessage: string;
-  }[];
-  minLength?: number;
-  maxLength?: number;
-  validate?: (v: GetFieldType<T, K>, values: T) => boolean | string | undefined;
-  enhanceValues?: (v: GetFieldType<T, K>, values: T) => T;
-  enhance?: (v: GetFieldType<T, K>, values: T) => GetFieldType<T, K>;
-}
-interface Customizing<T, K extends DotNestedKeys<T>>
-  extends BaseCustomizing<T, K> {
-  onChangeText?: TextInputProps['onChangeText'];
-  onBlur?: TextInputProps['onBlur'];
-  onLayout?: TextInputProps['onLayout'];
-}
-
-interface CustomizingRaw<T, K extends DotNestedKeys<T>>
-  extends BaseCustomizing<T, K> {
-  onChange?: (v: GetFieldType<T, K>) => void;
-  onBlur?:
-    | ((e: NativeSyntheticEvent<TextInputFocusEventData>) => void)
-    | undefined;
-  onLayout?: ((event: LayoutChangeEvent) => void) | undefined;
-}
-
-type FormRawType<T> = <K extends DotNestedKeysWithRoot<T>>(
-  key: K,
-  //@ts-ignore
-  handlers?: CustomizingRaw<T, K>
-) => FormRawProps<GetFieldType<T, K>>;
-
-type FormTextType<T> = <K extends DotNestedKeys<T>>(
-  key: K,
-  handlers?: Customizing<T, K>
-) => FormTextInputProps;
-
-type FieldsLastCharacters<T> = {
-  [key in keyof T]?: string | undefined;
-};
-
-type ReferencerReturns = TextInputProps & { ref: React.Ref<TextInput> };
-export type ReferencerType = (
-  key: string,
-  formIndex: number
-) => ReferencerReturns;
-
-export type IndexerType = {
-  add: () => number;
-  i: number;
-};
-
-// we need something to keep track of nested forms
-export function indexer(): IndexerType {
-  let i: number = 0;
-  function add() {
-    i++;
-    return i;
-  }
-  return {
-    add,
-    i,
-  };
-}
-
-export function useFormContext(): FormContextType & {
-  formIndex: number;
-} {
-  const px = React.useContext(FormContext);
-  const ix = useInnerContext(!!px);
-  const ctx = (px || ix)!;
-  const idx = React.useRef<number>(px ? px.indexer.add() : ctx.indexer.i);
-  return {
-    ...ctx,
-    formIndex: idx.current,
-  };
-}
-
-type IndexKeyMap = Record<string, number>;
-type RefKeyMap = Record<string, TextInput>;
-
-type FormIndexKeyMap = Record<number, IndexKeyMap>;
-export type FormRefKeyMap = Record<number, RefKeyMap>;
-
-export function useInnerContext(skip?: boolean) {
-  const [lastKey, setLastKey] = useRefState<string | undefined>(undefined);
-  const refIndex = React.useRef<number>(0);
-
-  const indexForKey = React.useRef<FormIndexKeyMap>({});
-  const refForKey = React.useRef<FormRefKeyMap>({});
-  const referencedCallback = useReferencedCallback();
-
-  React.useEffect(() => {
-    // we would rather not do this hook at all, but we need to keep amount of hooks the same :)
-    if (skip) {
-      return;
-    }
-    const elements = Object.keys(refForKey.current).filter(
-      (key, _) => refForKey.current[key as any] !== null
-    );
-    const lKey = elements[elements.length - 1];
-    setLastKey(lKey);
-  }, [skip, lastKey, setLastKey, refForKey]);
-
-  // we would rather not do this hook at all, but we need to keep amount of hooks the same :)
-  if (skip) {
-    return undefined;
-  }
-
-  const referencer: ReferencerType = (key, formIndex) => {
-    return {
-      ref: referencedCallback(`ref.${key}`, (e: TextInput) => {
-        if (e === null) {
-          return;
-        }
-
-        const rk = refForKey.current;
-        const ik = indexForKey.current;
-        // set default state if undefined
-        rk[formIndex] = rk[formIndex] || {};
-        ik[formIndex] = ik[formIndex] || {};
-
-        const index = rk[formIndex][key];
-        if (index === undefined) {
-          refIndex.current = refIndex.current + 1;
-          ik[formIndex][key] = refIndex.current;
-        }
-        rk[formIndex][key] = e;
-      }),
-      onSubmitEditing:
-        lastKey.current === key
-          ? undefined
-          : // TODO: handle submit on last onSubmitEditing
-            // referencedCallback(`submitEditing.${key}`, () => {
-            //   submit();
-            // })
-            // TODO: blurOrSubmit on last field?
-            referencedCallback(`focusNext.${key}`, () => {
-              const rk = refForKey.current[formIndex] || {};
-              const ik = indexForKey.current[formIndex] || {};
-              const currentField = rk[key];
-
-              // combine fields of current and next form
-              const fields = Object.keys(refForKey.current)
-                .map((frmKey) => {
-                  const fi = Number(frmKey);
-                  const refs = refForKey.current[fi];
-                  const ixs = indexForKey.current[fi];
-                  return Object.keys(refs)
-                    .filter((e) => !!e)
-                    .map((k) => ({
-                      element: refs[k],
-                      index: ixs[k],
-                      fi,
-                    }))
-                    .sort((a, b) => a.fi - b.fi && a.index - b.index);
-                })
-                .flat();
-
-              const nextField = fields.find((f) => {
-                const p = f?.element?.props;
-                // TODO: fix this with function components
-                // skip disabled fields in focus
-                if ((p as any)?.disabled === true || p?.editable === false) {
-                  return false;
-                }
-                // already sorted so the first one to hit above current index is the next field
-                return f.index > ik[key];
-              });
-
-              nextField?.element?.focus?.();
-              currentField.blur();
-            }),
-      blurOnSubmit: lastKey.current === key,
-      returnKeyType: lastKey.current === key ? undefined : 'next',
-    };
-  };
-
-  return { referencer, indexer: indexer(), refForKey };
-}
+import { defaultLocale } from './translations/utils';
+import useCheckError from './useCheckError';
+import { useFormContext } from './useFormContext';
+import useErrors from './useErrors';
 
 export default function useFormState<T>(
   initialState: T,
@@ -267,49 +67,7 @@ export default function useFormState<T>(
       }
     ) => void;
   }
-): [
-  {
-    wasSubmitted: boolean;
-    hasErrors: boolean;
-    values: T;
-    errors: ErrorUtility<T>;
-    touched: BooleanUtility<T>;
-    focusedOnce: BooleanUtility<T>;
-    setField: <K extends DotNestedKeys<T>>(
-      key: K,
-      value: GetFieldType<T, K>
-    ) => void;
-    setTouched: <K extends DotNestedKeys<T>>(key: K, value: boolean) => void;
-    setError: <K extends DotNestedKeys<T>>(
-      key: K,
-      value: boolean | string | undefined
-    ) => void;
-    clearErrors: () => void;
-    submit: () => void;
-    formProps: {
-      indexer: IndexerType;
-      referencer: ReferencerType;
-    };
-    setValues: React.Dispatch<SetStateAction<T>>;
-    hasError: <K extends DotNestedKeys<T>>(key: K) => boolean;
-  },
-  {
-    decimalText: FormTextType<T>;
-    numberText: FormTextType<T>;
-    decimal: FormTextType<T>;
-    number: FormTextType<T>;
-    text: FormTextType<T>;
-    username: FormTextType<T>;
-    password: FormTextType<T>;
-    email: FormTextType<T>;
-    postalCode: FormTextType<T>;
-    streetAddress: FormTextType<T>;
-    telephone: FormTextType<T>;
-    name: FormTextType<T>;
-    city: FormTextType<T>;
-    raw: FormRawType<T>;
-  }
-] {
+): [formState: FormStateType<T>, inputs: FormInputsType<T>] {
   const layoutsRef = React.useRef<Record<string, LayoutRectangle>>({});
   const locale = options?.locale || defaultLocale;
   const onChange = useLatest(options?.onChange);
@@ -330,115 +88,16 @@ export default function useFormState<T>(
 
   const referencedCallback = useReferencedCallback();
   const ctx = useFormContext();
+
   const [wasSubmitted, setWasSubmitted] = useRefState<boolean>(false);
   const [touched, sTouched] = useRefState<BooleanUtility<T>>({});
   const [focusedOnce, sFocusedOnce] = useRefState<BooleanUtility<T>>({});
-  const initialErrorCache = React.useRef<ErrorUtility<T>>({});
-  const [errors, sErrors] = useRefState<ErrorUtility<T>>({});
+
   const [values, setValues] = useRefState<T>(initialState);
   const [lastCharacters, setLastCharacters] = useRefState<
     FieldsLastCharacters<T>
   >({});
-
-  React.useEffect(() => {
-    // render optimization because we don't want to re-render on every field at the beginning of the onLayout calls :)
-    const timer = setTimeout(() => {
-      sErrors(initialErrorCache.current);
-    }, 100);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [initialErrorCache, sErrors]);
-
-  const setError = React.useCallback(
-    <K extends DotNestedKeys<T>>(
-      k: K,
-      v: boolean | string | undefined,
-      initial?: boolean
-    ) => {
-      const error = deepGet(errors.current, k);
-      if (v !== error) {
-        if (initial) {
-          initialErrorCache.current = deepSet(
-            initialErrorCache.current || {},
-            k,
-            v
-          ) as any;
-        } else {
-          sErrors((prev) => deepSet(prev, k, v) as any);
-        }
-      }
-    },
-    [errors, sErrors, initialErrorCache]
-  );
-
-  const clearErrors = React.useCallback(() => {
-    sErrors({});
-  }, [sErrors]);
-
-  const checkError = React.useCallback(
-    <K extends DotNestedKeys<T>>(
-      k: K,
-      h: Customizing<T, K> | CustomizingRaw<T, K> | undefined,
-      v: GetFieldType<T, K>,
-      allV: T,
-      initial?: boolean
-    ) => {
-      let err: boolean | string | undefined;
-
-      if (h) {
-        if (h?.required === true && !v) {
-          err = getTranslation(
-            locale,
-            'required'
-          )({
-            fieldKey: k,
-            label: h?.label,
-          });
-        } else if (h.minLength !== undefined && `${v}`.length < h.minLength) {
-          err = getTranslation(
-            locale,
-            'lengtShouldBeLongerThan'
-          )({
-            fieldKey: k,
-            label: h?.label,
-            requiredLength: h.minLength,
-          });
-        } else if (h.maxLength !== undefined && `${v}`.length > h.maxLength) {
-          err = getTranslation(
-            locale,
-            'lengthShouldBeShorterThan'
-          )({
-            fieldKey: k,
-            label: h?.label,
-            requiredLength: h.maxLength,
-          });
-        } else if (h.shouldFollowRegexes) {
-          for (let { regex, errorMessage } of h.shouldFollowRegexes) {
-            if (!regex.test(`${v}`)) {
-              err = getTranslation(
-                locale,
-                'shouldFollowRegex'
-              )({
-                fieldKey: k,
-                label: h?.label,
-                errorMessage,
-              });
-              break;
-            }
-          }
-        } else if (h.validate) {
-          err = h.validate?.(v, allV);
-        }
-      }
-      setError(
-        k,
-        err === true || err === undefined || err === null ? false : err,
-        initial
-      );
-    },
-    [locale, setError]
-  );
+  const { errors, setError, checkError, setErrors } = useErrors<T>();
 
   const setTouched = React.useCallback(
     <K extends DotNestedKeys<T>>(k: K, v: boolean) => {
@@ -501,7 +160,9 @@ export default function useFormState<T>(
           (k) => !!deepGet(errors.current, k)
         )!;
         const firstErrorY = Math.min(
-          ...errorKeys.map((key) => layoutsRef.current[key].y)
+          ...errorKeys.map((key) => {
+            return layoutsRef.current?.[key]?.y || 0;
+          })
         );
 
         if (firstErrorY) {
@@ -552,7 +213,9 @@ export default function useFormState<T>(
         if (Platform.OS === 'web') {
           const target = (e.nativeEvent as any).target as any;
           let rect = target.getBoundingClientRect();
-          let scrollRect = (scrollViewRef.current as any).getBoundingClientRect();
+          let scrollRect = (
+            scrollViewRef.current as any
+          ).getBoundingClientRect();
 
           layoutsRef.current = {
             ...layoutsRef.current,
@@ -621,9 +284,8 @@ export default function useFormState<T>(
       testID: k,
       onChangeText: referencedCallback(`number.${k}`, (n: string) => {
         // support numbers like 0,02
-        const { lastPart, hasLastPart, firstPart } = splitNumberStringInParts(
-          n
-        );
+        const { lastPart, hasLastPart, firstPart } =
+          splitNumberStringInParts(n);
 
         if (hasLastPart) {
           setLastCharacters((prev) => deepSet(prev, k, lastPart) as any);
@@ -815,44 +477,43 @@ export default function useFormState<T>(
     error: hasError(k),
     errorMessage: deepGet(errors.current, k),
   });
-
-  // @ts-ignore
-  return [
-    // @ts-ignore
-    {
-      // @ts-ignore
-      wasSubmitted: wasSubmitted.current,
-      hasErrors: checkErrorObject(errors.current),
-      values: values.current,
-      errors: errors.current,
-      touched: touched.current,
-      focusedOnce: focusedOnce.current,
-      setField,
-      setError,
-      setTouched,
-      submit,
-      formProps: { referencer: ctx.referencer, indexer: ctx.indexer },
-      hasError,
-      clearErrors,
-      setValues,
+  const formState: FormStateType<T> = {
+    wasSubmitted: wasSubmitted.current,
+    hasErrors: checkErrorObject(errors.current),
+    values: values.current,
+    errors: errors.current,
+    touched: touched.current,
+    focusedOnce: focusedOnce.current,
+    setField,
+    setError,
+    setTouched,
+    submit,
+    formProps: {
+      referencer: ctx.referencer,
+      indexer: ctx.indexer,
     },
-    {
-      text,
-      username,
-      number,
-      decimal,
-      numberText,
-      decimalText,
-      password,
-      email,
-      raw,
-      postalCode,
-      streetAddress,
-      name,
-      telephone,
-      city,
-    },
-  ];
+    hasError,
+    clearErrors,
+    setValues,
+  };
+  //@ts-ignore
+  const inputs: FormInputsType<T> = {
+    text,
+    username,
+    number,
+    decimal,
+    numberText,
+    decimalText,
+    password,
+    email,
+    raw,
+    postalCode,
+    streetAddress,
+    name,
+    telephone,
+    city,
+  };
+  return [formState, inputs];
 }
 
 function countZeroAtEndOfString(str: string) {
@@ -904,46 +565,4 @@ function splitNumberStringInParts(str: string) {
     lastPart: '',
     hasLastPart: false,
   };
-}
-
-function reverse(str: string) {
-  let reversed = '';
-  for (let character of str) {
-    reversed = character + reversed;
-  }
-  return reversed;
-}
-
-function isEmptyNumber(str: number) {
-  return !str && str !== 0;
-}
-
-function checkErrorObject(errors: any) {
-  const keys = Object.keys(errors);
-  for (let key of keys) {
-    if (isObject(errors[key])) {
-      if (checkErrorObject(errors[key])) {
-        return true;
-      }
-    } else {
-      if (!!errors[key]) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-function isObject<T>(val: T) {
-  if (val === null) {
-    return false;
-  }
-  return typeof val === 'function' || typeof val === 'object';
-}
-function removeEmpty<T extends { [s: string]: unknown } | ArrayLike<unknown>>(
-  obj: T
-): T {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  ) as any;
 }

@@ -1,11 +1,18 @@
 import * as React from 'react';
 
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Form, useFormState } from '../../src/index';
+import {
+  registerTranslation,
+  en,
+  Form,
+  useFormState,
+} from 'react-native-use-form';
 import { Appbar, Button, Surface, Title } from 'react-native-paper';
 import TextInputWithError from './TextInputWithError';
 import { useRef } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+registerTranslation('en', en);
 type AddressCompany = {
   name: string;
 };
@@ -58,105 +65,111 @@ export default function App() {
 
   // console.log({ values, errors });
   return (
-    <View style={styles.root}>
-      <Appbar.Header>
-        <Appbar.Content title="Form" />
-      </Appbar.Header>
-      <ScrollView style={styles.scrollView} ref={scrollViewRef}>
-        <View style={styles.inner}>
-          <Form {...formProps}>
-            <TextInputWithError
-              mode="outlined"
-              error={hasError('email')}
-              {...fh.email('email', {
-                validate: (v) => {
-                  return looksLikeMail(v) ? true : 'Email-address is invalid';
-                },
-                label: 'Email',
-              })}
-            />
-            <TextInputWithError
-              mode="outlined"
-              {...fh.telephone('telephone', {
-                required: true,
-                minLength: 3,
-                maxLength: 10,
-                shouldFollowRegexes: [telephoneRegex],
-                label: 'Telephone',
-              })}
-            />
-            <TextInputWithError
-              mode="outlined"
-              {...fh.text('postalCode', {
-                enhance: (v) => {
-                  return (v || '').toUpperCase();
-                },
-                label: 'Postalcode',
-              })}
-            />
+    <SafeAreaProvider>
+      <View style={styles.root}>
+        <Appbar.Header>
+          <Appbar.Content title="Form" />
+        </Appbar.Header>
+        <ScrollView style={styles.scrollView} ref={scrollViewRef}>
+          <View style={styles.inner}>
+            <Form {...formProps}>
+              <TextInputWithError
+                mode="outlined"
+                error={hasError('email')}
+                {...fh.email('email', {
+                  validate: (v) => {
+                    return looksLikeMail(v) ? true : 'Email-address is invalid';
+                  },
+                  label: 'Email',
+                })}
+              />
+              <TextInputWithError
+                mode="outlined"
+                {...fh.telephone('telephone', {
+                  required: true,
+                  minLength: 3,
+                  maxLength: 10,
+                  shouldFollowRegexes: [telephoneRegex],
+                  label: 'Telephone',
+                })}
+              />
+              <TextInputWithError
+                mode="outlined"
+                {...fh.text('postalCode', {
+                  enhance: (v) => {
+                    return (v || '').toUpperCase();
+                  },
+                  label: 'Postalcode',
+                })}
+              />
 
-            <TextInputWithError
-              mode="outlined"
-              {...fh.password('password', {
-                required: true,
-                minLength: 3,
-                maxLength: 10,
-                label: 'Password',
-              })}
-            />
+              <TextInputWithError
+                mode="outlined"
+                {...fh.password('password', {
+                  required: true,
+                  minLength: 3,
+                  maxLength: 10,
+                  label: 'Password',
+                })}
+              />
 
-            <TextInputWithError
-              mode="outlined"
-              {...fh.number('age', {
-                required: true,
-                minLength: 3,
-                maxLength: 10,
-                label: 'Age',
-              })}
-            />
-            <TextInputWithError
-              mode="outlined"
-              {...fh.decimal('money', {
-                required: true,
-                minLength: 3,
-                maxLength: 10,
-                label: 'Money bank account',
-              })}
-            />
-            <TextInputWithError
-              mode="outlined"
-              {...fh.text('organization.telephone', {
-                required: true,
-                minLength: 3,
-                maxLength: 10,
-                shouldFollowRegexes: [telephoneRegex],
-                label: 'Organization telephone',
-              })}
-            />
-            <TextInputWithError
-              mode="outlined"
-              {...fh.number('organization.revenue', {
-                required: true,
-                minLength: 3,
-                maxLength: 10,
-                validate: (v) => {
-                  if (v < 10) {
-                    return 'revenue too low';
-                  }
-                  return undefined;
-                },
-                label: 'Organization revenue',
-              })}
-            />
-            <AddressEdit {...fh.raw('address')} />
-            <AddressCompanyEdit {...fh.raw('address.company')} />
-            <Button mode="contained" onPress={submit} style={{ marginTop: 24 }}>
-              Save
-            </Button>
-          </Form>
-        </View>
-      </ScrollView>
-    </View>
+              <TextInputWithError
+                mode="outlined"
+                {...fh.number('age', {
+                  required: true,
+                  minLength: 3,
+                  maxLength: 10,
+                  label: 'Age',
+                })}
+              />
+              <TextInputWithError
+                mode="outlined"
+                {...fh.decimal('money', {
+                  required: true,
+                  minLength: 3,
+                  maxLength: 10,
+                  label: 'Money bank account',
+                })}
+              />
+              <TextInputWithError
+                mode="outlined"
+                {...fh.text('organization.telephone', {
+                  required: true,
+                  minLength: 3,
+                  maxLength: 10,
+                  shouldFollowRegexes: [telephoneRegex],
+                  label: 'Organization telephone',
+                })}
+              />
+              <TextInputWithError
+                mode="outlined"
+                {...fh.number('organization.revenue', {
+                  required: true,
+                  minLength: 3,
+                  maxLength: 10,
+                  validate: (v) => {
+                    if (v < 10) {
+                      return 'revenue too low';
+                    }
+                    return undefined;
+                  },
+                  label: 'Organization revenue',
+                })}
+              />
+              <AddressEdit {...fh.raw('address')} />
+              <AddressCompanyEdit {...fh.raw('address.company')} />
+              <Button
+                mode="contained"
+                onPress={submit}
+                style={{ marginTop: 24 }}
+              >
+                Save
+              </Button>
+            </Form>
+          </View>
+        </ScrollView>
+      </View>
+    </SafeAreaProvider>
   );
 }
 
