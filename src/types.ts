@@ -8,6 +8,7 @@ import type {
   TextInputProps,
 } from 'react-native';
 import type { TextInput } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 type GetIndexedField<T, K> = K extends keyof NonNullable<T>
   ? NonNullable<T>[K]
@@ -75,10 +76,43 @@ export type ErrorUtility<T> = {
     : ErrorUtility<T[K]>;
 };
 
+export type ScrollViewRefObject = React.RefObject<{
+  scrollTo: ScrollView['scrollTo'];
+  measure?: View['measure'];
+  measureLayout?: View['measureLayout'];
+  measureInWindow?: View['measureInWindow'];
+}>;
+export type ScrollViewRef = ScrollViewRefObject | undefined | null;
+export type ReferencedCallback = (
+  key: string,
+  current: (args: any) => any
+) => any;
+
 export type BooleanUtility<T> = {
   [K in keyof T]?: T[K] extends number | string | boolean
     ? boolean
     : BooleanUtility<T[K]>;
+};
+
+export type FormOptions<T> = {
+  scrollViewRef?: ScrollViewRef;
+  locale?: string;
+  enhance?: (newValues: T, extra: { previousValues: T }) => T;
+  onChange?: (
+    newState: T,
+    extra: {
+      errors: ErrorUtility<T>;
+      touched: BooleanUtility<T>;
+      focusedOnce: BooleanUtility<T>;
+    }
+  ) => void;
+  onSubmit?: (
+    newState: T,
+    extra: {
+      touched: BooleanUtility<T>;
+      focusedOnce: BooleanUtility<T>;
+    }
+  ) => void;
 };
 
 export type FormStateType<T> = {
@@ -142,15 +176,18 @@ export type FormTextInputProps = {
   label?: string;
 };
 
-export type FormRawProps<V> = {
+export type FormInputBaseProps = {
   testID: string;
-  value: V;
-  onChange: (v: V) => void;
   onBlur: TextInputProps['onBlur'];
   onLayout: TextInputProps['onLayout'];
   error: boolean;
   errorMessage: string | undefined;
 };
+
+export type FormInputRawProps<V> = {
+  value: V;
+  onChange: (v: V) => void;
+} & FormInputBaseProps;
 
 interface BaseCustomizing<T, K extends DotNestedKeys<T>> {
   label?: string;
