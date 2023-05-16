@@ -732,6 +732,22 @@ export default function useFormState<T>(
     autoCorrect: false,
   });
 
+  const firstName = <K extends DotNestedKeys<T>>(
+    k: K,
+    h?: Customizing<T, K>
+  ): FormTextInputProps => ({
+    ...name(k, h),
+    autoComplete: 'given-name' as any, // https://reactnative.dev/docs/next/textinput#inputmode
+  });
+
+  const lastName = <K extends DotNestedKeys<T>>(
+    k: K,
+    h?: Customizing<T, K>
+  ): FormTextInputProps => ({
+    ...name(k, h),
+    autoComplete: 'family-name' as any, // https://reactnative.dev/docs/next/textinput#inputmode
+  });
+
   const username = <K extends DotNestedKeys<T>>(
     k: K,
     h?: Customizing<T, K>
@@ -849,6 +865,8 @@ export default function useFormState<T>(
       postalCode,
       streetAddress,
       name,
+      firstName,
+      lastName,
       telephone,
       city,
     },
