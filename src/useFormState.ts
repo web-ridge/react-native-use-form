@@ -306,6 +306,8 @@ export default function useFormState<T>(
     streetAddress: FormTextType<T>;
     telephone: FormTextType<T>;
     name: FormTextType<T>;
+    firstName: FormTextType<T>;
+    lastName: FormTextType<T>;
     city: FormTextType<T>;
     raw: FormRawType<T>;
   }
