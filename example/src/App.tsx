@@ -36,6 +36,7 @@ type FormType = {
   address?: AddressType | null;
 };
 export default function App() {
+  const [hideRequiredField, setHideRequiredField] = React.useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const [{ submit, formProps, hasError }, fh] = useFormState<FormType>(
     {
@@ -83,16 +84,21 @@ export default function App() {
                   label: 'Email',
                 })}
               />
-              <TextInputWithError
-                mode="outlined"
-                {...fh.telephone('telephone', {
-                  required: true,
-                  minLength: 3,
-                  maxLength: 10,
-                  shouldFollowRegexes: [telephoneRegex],
-                  label: 'Telephone',
-                })}
-              />
+              <Button onPress={() => setHideRequiredField((prev) => !prev)}>
+                hide required field
+              </Button>
+              {!hideRequiredField && (
+                <TextInputWithError
+                  mode="outlined"
+                  {...fh.telephone('telephone', {
+                    required: true,
+                    minLength: 3,
+                    maxLength: 10,
+                    shouldFollowRegexes: [telephoneRegex],
+                    label: 'Telephone',
+                  })}
+                />
+              )}
               <TextInputWithError
                 mode="outlined"
                 {...fh.text('postalCode', {

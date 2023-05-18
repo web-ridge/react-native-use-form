@@ -1,4 +1,3 @@
-import { deepGet } from './objectPath';
 import type {
   Customizing,
   DotNestedKeys,
@@ -17,7 +16,10 @@ export default function useLayout<T>({
   scrollViewRef: ScrollViewRef;
 }) {
   const layoutsRef = React.useRef<Record<string, LayoutRectangle>>({});
-  return <K extends DotNestedKeys<T>>(k: K, h?: Customizing<T, K>) =>
+  const onLayoutKey = <K extends DotNestedKeys<T>>(
+    k: K,
+    h?: Customizing<T, K>
+  ) =>
     referencedCallback(`layout.${k}`, (e: LayoutChangeEvent) => {
       h?.onLayout?.(e);
 
@@ -31,10 +33,14 @@ export default function useLayout<T>({
         });
       }
 
-      const value = deepGet(values.current, k);
-      // this is not ideal, but we need to check the error after the layout is
-      // calculated  because it's the only way to check if the value has an
-      // error since we don't have the handlers at mount time
-      checkError(k, h, value as any, values.current, true);
+      // const value = deepGet(values.current, k);
+      // // this is not ideal, but we need to check the error after the layout is
+      // // calculated  because it's the only way to check if the value has an
+      // // error since we don't have the handlers at mount time
+      // checkError(k, h, value as any, values.current, true);
     });
+  return {
+    onLayoutKey,
+    layoutsRef,
+  };
 }
