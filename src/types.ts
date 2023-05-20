@@ -8,7 +8,7 @@ import type {
   TextInputProps,
 } from 'react-native';
 import type { TextInput } from 'react-native';
-import { ScrollView, View } from 'react-native';
+import type { ScrollView, View } from 'react-native';
 
 type GetIndexedField<T, K> = K extends keyof NonNullable<T>
   ? NonNullable<T>[K]
@@ -189,7 +189,7 @@ export type FormInputRawProps<V> = {
   onChange: (v: V) => void;
 } & FormInputBaseProps;
 
-interface BaseCustomizing<T, K extends DotNestedKeys<T>> {
+export interface BaseCustomizing<T, K extends DotNestedKeys<T>> {
   label?: string;
   required?: boolean;
   shouldFollowRegexes?: {
@@ -220,7 +220,6 @@ export interface CustomizingRaw<T, K extends DotNestedKeys<T>>
 
 type FormRawType<T> = <K extends DotNestedKeysWithRoot<T>>(
   key: K,
-  // @ts-ignore
   handlers?: CustomizingRaw<T, K>
 ) => FormRawProps<GetFieldType<T, K>>;
 

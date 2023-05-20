@@ -3,13 +3,21 @@ import type {
   DotNestedKeys,
   FormTextInputProps,
   FieldsLastCharacters,
+  GetFieldType,
 } from '../types';
 import { deepGet, deepSet } from '../objectPath';
 import { isEmptyNumber, reverse } from '../utils';
 import * as React from 'react';
 import useRefState from '../useRefState';
+import type { ReferencedCallback } from '../types';
 
-export function useNumberRaw<T>({ locale }: { locale: string }) {
+export function useNumberRaw<T>({
+  locale,
+  referencedCallback,
+}: {
+  locale: string;
+  referencedCallback: ReferencedCallback;
+}) {
   const [lastCharacters, setLastCharacters] = useRefState<
     FieldsLastCharacters<T>
   >({});
@@ -27,9 +35,11 @@ export function useNumberRaw<T>({ locale }: { locale: string }) {
   }, [locale]);
   return <K extends DotNestedKeys<T>>(
     k: K,
-    h?: Customizing<T, K>
-  ): FormTextInputProps => {
-    const deepValue = deepGet(values.current, k) as number;
+    h: Customizing<T, K> | undefined,
+    values: T,
+    changeValue: (k: K, v: GetFieldType<T, K>, h?: Customizing<T, K>) => void
+  ): Pick<FormTextInputProps, 'onChangeText' | 'value'> => {
+    const deepValue = deepGet(values, k) as number;
     const value = `${isEmptyNumber(deepValue) ? '' : deepValue}`.replace(
       '.',
       separationCharacter

@@ -1,5 +1,5 @@
-import {
-  BooleanUtility,
+import type {
+  BaseCustomizing,
   Customizing,
   CustomizingRaw,
   DotNestedKeys,
@@ -9,8 +9,9 @@ import {
   FormOptions,
   FormTextInputProps,
   GetFieldType,
+  ReferencedCallback,
 } from '../types';
-import { removeEmpty, useReferencedCallback } from '../utils';
+import { removeEmpty, useLatest } from '../utils';
 import { deepGet, deepSet } from '../objectPath';
 import { useNumberRaw } from './numberRaw';
 import {
@@ -20,54 +21,48 @@ import {
   TextInputProps,
 } from 'react-native';
 import * as React from 'react';
-import useRefState from '../useRefState';
-import useErrors from '../useErrors';
+import type { UseErrorsReturnType } from '../useErrors';
+import type { UseLayoutReturnType } from '../useLayout';
+import type { FormContextType } from '../FormContext';
+import type { UseValuesReturnType } from '../useValues';
+import type { UseTouchedReturnType } from '../useTouched';
+import type { UseFocusedOnceReturnType } from '../useFocusedOnce';
+import type { UseWasSubmittedReturnType } from '../useWasSubmitted';
 
-function useTouched<T>() {
-  const [touched, sTouched] = useRefState<BooleanUtility<T>>({});
-  const setTouched = React.useCallback(
-    <K extends DotNestedKeys<T>>(k: K, v: boolean) => {
-      sTouched((p) => deepSet(p, k, v) as any);
-    },
-    [sTouched]
-  );
-  return { touched, setTouched };
-}
-export function useInputs<T>(options: FormOptions<T> | undefined): {
-  inputs: FormInputsType<T>;
-  focusedOnce: BooleanUtility<T>;
-} {
-  const referencedCallback = useReferencedCallback();
-  const { touched, setTouched } = useTouched<T>();
-  const [values, setValues] = useRefState<T>(initialState);
-  const { errors, setError, checkError, setErrors } = useErrors<T>({ locale });
+export type UseInputsReturnType<T> = ReturnType<typeof useInputs<T>>;
+
+export function useInputs<T>({
+  options,
+  locale,
+  context,
+  referencedCallback,
+  wasSubmitted: { wasSubmitted },
+  error: { checkError, updateHandler: updateErrorHandler, hasError },
+  layout: { onLayoutKey },
+  value: { values, setValues },
+  touch: { touched, setTouched },
+  focusedOnce: { focusedOnce, setFocusedOnce },
+}: {
+  options: FormOptions<T> | undefined;
+  locale: string;
+  context: FormContextType & {
+    formIndex: number;
+  };
+  referencedCallback: ReferencedCallback;
+  wasSubmitted: UseWasSubmittedReturnType;
+  error: UseErrorsReturnType<T>;
+  layout: UseLayoutReturnType<T>;
+  value: UseValuesReturnType<T>;
+  touch: UseTouchedReturnType<T>;
+  focusedOnce: UseFocusedOnceReturnType<T>;
+}) {
+  const onChange = useLatest(options?.onChange);
+  const enhance = useLatest(options?.enhance);
 
   type InputT<ReturnType> = <K extends DotNestedKeys<T>>(
     k: K,
     h: Customizing<T, K> | undefined
   ) => ReturnType;
-
-  const [focusedOnce, sFocusedOnce] = useRefState<BooleanUtility<T>>({});
-  const setFocusedOnce = React.useCallback(
-    <K extends DotNestedKeys<T>>(k: K, v: boolean) => {
-      sFocusedOnce((p) => deepSet(p, k, v) as any);
-    },
-    [sFocusedOnce]
-  );
-
-  const hasError = React.useCallback(
-    <K extends DotNestedKeys<T>>(k: K): boolean => {
-      const isTouched = deepGet(touched.current, k);
-      const isFocusedOnce = deepGet(focusedOnce.current, k);
-      const error = deepGet(errors.current, k);
-      if ((isTouched && isFocusedOnce) || wasSubmitted.current) {
-        const noError = error === false || errors.current === undefined;
-        return !noError;
-      }
-      return false;
-    },
-    [errors, focusedOnce, touched, wasSubmitted]
-  );
 
   const changeValue = React.useCallback(
     <K extends DotNestedKeys<T>>(
@@ -97,13 +92,13 @@ export function useInputs<T>(options: FormOptions<T> | undefined): {
       onChange.current?.(enhancedNewValues, {
         touched: touched.current,
         focusedOnce: focusedOnce.current,
-        errors: errors.current,
+        // errors: errors.current,
       });
     },
     [
       checkError,
       enhance,
-      errors,
+      // errors,
       focusedOnce,
       onChange,
       setTouched,
@@ -121,16 +116,19 @@ export function useInputs<T>(options: FormOptions<T> | undefined): {
         setFocusedOnce(k, true);
       }
     );
-  const baseProps: InputT<FormInputBaseProps> = (k, h) =>
-    removeEmpty({
-      ...ctx.referencer(k, ctx.formIndex),
+  const baseProps: InputT<FormInputBaseProps> = (k, h) => {
+    updateErrorHandler(k, h as BaseCustomizing<K, string>);
+    return removeEmpty({
+      ...context.referencer(k, context.formIndex),
       testID: k,
-      onLayout: layout(k, h),
+      onLayout: onLayoutKey(k),
       onBlur: blur(k, h),
       error: hasError(k),
-      errorMessage: deepGet(errors.current, k),
+      errorMessage: 'TODO',
+      // errorMessage: deepGet(errors.current, k),
       label: h?.label,
     });
+  };
 
   const text: InputT<FormTextInputProps> = (k, h) => ({
     ...baseProps(k, h),
@@ -141,7 +139,7 @@ export function useInputs<T>(options: FormOptions<T> | undefined): {
     ),
   });
 
-  const numberRawCreator = useNumberRaw<T>();
+  const numberRawCreator = useNumberRaw<T>({ locale, referencedCallback });
   const numberRaw: InputT<FormTextInputProps> = (k, h) => ({
     ...baseProps(k, h),
     ...numberRawCreator(k, h, values.current, changeValue),
@@ -221,8 +219,6 @@ export function useInputs<T>(options: FormOptions<T> | undefined): {
     autoCorrect: false,
     selectTextOnFocus: Platform.OS !== 'web',
     label: h?.label,
-    errorMessage: deepGet(errors.current, k),
-    error: hasError(k),
   });
 
   const email: InputT<FormTextInputProps> = (k, h) => ({
@@ -254,24 +250,25 @@ export function useInputs<T>(options: FormOptions<T> | undefined): {
     [changeValue]
   );
 
+  // @ts-expect-error
+  const inputs: FormInputsType<T> = {
+    text,
+    number,
+    decimal,
+    numberText,
+    decimalText,
+    postalCode,
+    streetAddress,
+    city,
+    telephone,
+    name,
+    username,
+    password,
+    email,
+    raw,
+  };
   return {
-    inputs: {
-      text,
-      number,
-      decimal,
-      numberText,
-      decimalText,
-      postalCode,
-      streetAddress,
-      city,
-      telephone,
-      name,
-      username,
-      password,
-      email,
-      raw,
-    },
+    inputs: inputs as any, // any for infinite error loop typescript
     setField,
-    focusedOnce: focusedOnce.current,
   };
 }

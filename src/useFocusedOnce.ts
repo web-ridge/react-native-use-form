@@ -3,14 +3,14 @@ import type { BooleanUtility, DotNestedKeys } from './types';
 import * as React from 'react';
 import { deepSet } from './objectPath';
 
-export type UseTouchedReturnType<T> = ReturnType<typeof useTouched<T>>;
-export default function useTouched<T>() {
-  const [touched, sTouched] = useRefState<BooleanUtility<T>>({});
-  const setTouchedField = React.useCallback(
+export type UseFocusedOnceReturnType<T> = ReturnType<typeof useFocusedOnce<T>>;
+export default function useFocusedOnce<T>() {
+  const [focusedOnce, sFocusedOnce] = useRefState<BooleanUtility<T>>({});
+  const setFocusedOnce = React.useCallback(
     <K extends DotNestedKeys<T>>(k: K, v: boolean) => {
-      sTouched((p) => deepSet(p, k, v) as any);
+      sFocusedOnce((p) => deepSet(p, k, v) as any);
     },
-    [sTouched]
+    [sFocusedOnce]
   );
-  return { touched, setTouchedField };
+  return { focusedOnce, setFocusedOnce };
 }

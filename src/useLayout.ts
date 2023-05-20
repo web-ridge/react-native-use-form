@@ -8,6 +8,8 @@ import type { LayoutChangeEvent, LayoutRectangle } from 'react-native';
 import * as React from 'react';
 import { measure } from './layoutUtil';
 
+export type UseLayoutReturnType<T> = ReturnType<typeof useLayout<T>>;
+
 export default function useLayout<T>({
   referencedCallback,
   scrollViewRef,

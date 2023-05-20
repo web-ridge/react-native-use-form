@@ -2,35 +2,61 @@ import * as React from 'react';
 import { checkErrorObject, useLatest } from './utils';
 import { deepGet } from './objectPath';
 import type { FormOptions } from './types';
-import useRefState from './useRefState';
+import type { UseLayoutReturnType } from './useLayout';
+import type { UseErrorsReturnType } from './useErrors';
+import type { UseWasSubmittedReturnType } from './useWasSubmitted';
+import type { UseValuesReturnType } from './useValues';
+import type { UseTouchedReturnType } from './useTouched';
+import type { UseFocusedOnceReturnType } from './useFocusedOnce';
 
-export function useSubmit<T>(options: FormOptions<T> | undefined) {
+export type UseSubmitReturnType<T> = ReturnType<typeof useSubmit<T>>;
+
+export function useSubmit<T>({
+  options,
+  layout,
+  error: { checkErrors },
+  wasSubmitted,
+  value: { values },
+  touch: { touched },
+  focusedOnce: { focusedOnce },
+}: {
+  options: FormOptions<T> | undefined;
+  value: UseValuesReturnType<T>;
+  wasSubmitted: UseWasSubmittedReturnType;
+  layout: UseLayoutReturnType<T>;
+  error: UseErrorsReturnType<T>;
+  touch: UseTouchedReturnType<T>;
+  focusedOnce: UseFocusedOnceReturnType<T>;
+}) {
+  const scrollViewRef = options?.scrollViewRef;
+
+  const { layoutsRef } = layout;
   const onSubmit = useLatest(options?.onSubmit);
-  const [wasSubmitted, setWasSubmitted] = useRefState<boolean>(false);
-  const scrollViewRef = options?.scrollViewRef?.current;
+
   return {
     wasSubmitted,
     submit: React.useCallback(() => {
-      setWasSubmitted(true);
+      wasSubmitted.setWasSubmitted(true);
       // if it returns an object there are errors
-      if (checkErrorObject(errors.current)) {
+      if (checkErrors()) {
         if (scrollViewRef?.current) {
-          const errorKeys = Object.keys(layoutsRef.current).filter(
-            (k) => !!deepGet(errors.current, k)
-          )!;
-          const firstErrorY = Math.min(
-            ...errorKeys.map((key) => {
-              return layoutsRef.current?.[key]?.y || 0;
-            })
-          );
-
-          if (firstErrorY) {
-            const extraPaddingTop = 24;
-            scrollViewRef.current.scrollTo({
-              y: firstErrorY - extraPaddingTop,
-              animated: true,
-            });
-          }
+          // TODO: scroll to first error
+          // const errorKeys = Object.keys(layoutsRef.current).filter(
+          //   (k) => !!deepGet(errors.current, k)
+          // )!;
+          // const firstErrorY = Math.min(
+          //   ...errorKeys.map((key) => {
+          //     return layoutsRef.current?.[key]?.y || 0;
+          //   })
+          // );
+          //
+          // if (firstErrorY) {
+          //   const extraPaddingTop = 24;
+          //   scrollViewRef.current.scrollTo({
+          //     y: firstErrorY - extraPaddingTop,
+          //     animated: true,
+          //   });
+          // }
         }
         return;
       }
@@ -40,13 +66,13 @@ export function useSubmit<T>(options: FormOptions<T> | undefined) {
         focusedOnce: focusedOnce.current,
       });
     }, [
-      setWasSubmitted,
-      scrollViewRef,
-      errors,
+      wasSubmitted,
+      checkErrors,
       onSubmit,
       values,
       touched,
       focusedOnce,
+      scrollViewRef,
     ]),
   };
 }

@@ -7,20 +7,13 @@ import type {
 } from './types';
 import { getTranslation } from './translations/utils';
 
-export default function useCheckError<T>({
-  locale,
-  setError,
-}: {
-  locale: string;
-  setError: any;
-}) {
+export default function useCheckError<T>({ locale }: { locale: string }) {
   return React.useCallback(
     <K extends DotNestedKeys<T>>(
       k: K,
       h: Customizing<T, K> | CustomizingRaw<T, K> | undefined,
       v: GetFieldType<T, K>,
-      allV: T,
-      initial?: boolean
+      allV: T
     ) => {
       let err: boolean | string | undefined;
 
@@ -69,12 +62,8 @@ export default function useCheckError<T>({
           err = h.validate?.(v, allV);
         }
       }
-      setError(
-        k,
-        err === true || err === undefined || err === null ? false : err,
-        initial
-      );
+      return err === true || err === undefined || err === null ? false : err;
     },
-    [locale, setError]
+    [locale]
   );
 }

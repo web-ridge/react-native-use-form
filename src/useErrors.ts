@@ -1,52 +1,108 @@
 import * as React from 'react';
-import type { DotNestedKeys, ErrorUtility } from './types';
-import useRefState from './useRefState';
-import { deepGet, deepSet } from './objectPath';
+import type { BaseCustomizing, DotNestedKeys, ErrorUtility } from './types';
 import useCheckError from './useCheckError';
-import { checkErrorObject } from './utils';
+import { Customizing, CustomizingRaw, GetFieldType } from './types';
+import type { UseValuesReturnType } from './useValues';
+import type { UseFocusedOnceReturnType } from './useFocusedOnce';
+import type { UseTouchedReturnType } from './useTouched';
+import { deepGet } from './objectPath';
+import type { UseWasSubmittedReturnType } from './useWasSubmitted';
 
-export default function useErrors<T>({ locale }: { locale: string }) {
-  const initialErrorCache = React.useRef<ErrorUtility<T>>({});
-  const [errors, sErrors] = useRefState<ErrorUtility<T>>(initialErrorCache);
+export type UseErrorsReturnType<T> = ReturnType<typeof useErrors<T>>;
+
+export default function useErrors<T>({
+  // options,
+  locale,
+  touch: { touched },
+  value: { values },
+  focusedOnce: { focusedOnce },
+  wasSubmitted: { wasSubmitted },
+}: {
+  // options: FormOptions<T> | undefined;
+  locale: string;
+  value: UseValuesReturnType<T>;
+  focusedOnce: UseFocusedOnceReturnType<T>;
+  touch: UseTouchedReturnType<T>;
+  wasSubmitted: UseWasSubmittedReturnType;
+}) {
+  // TODO: detect if this is a render
+  const renderIndex = React.useRef(0);
   React.useEffect(() => {
-    // render optimization because we don't want to re-render on every field at the beginning of the onLayout calls :)
-    if (checkErrorObject(initialErrorCache.current)) {
-      const timer = setTimeout(() => {
-        sErrors(initialErrorCache.current);
-      }, 100);
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-    return undefined;
-  }, [initialErrorCache, sErrors]);
+    renderIndex.current += 1;
+  });
 
-  const setError = React.useCallback(
-    <K extends DotNestedKeys<T>>(
-      k: K,
-      v: boolean | string | undefined,
-      initial?: boolean
-    ) => {
-      const error = deepGet(errors.current, k);
-      if (v !== error) {
-        if (initial) {
-          initialErrorCache.current = deepSet(
-            initialErrorCache.current || {},
-            k,
-            v
-          ) as any;
-        } else {
-          sErrors((prev) => deepSet(prev, k, v) as any);
-        }
+  const renderIndexPerKey = React.useRef<Record<string, number>>({});
+  const handlers = React.useRef<Record<string, BaseCustomizing<T, any>>>({});
+
+  const updateHandler = React.useCallback(
+    (k: string, v: BaseCustomizing<T, any>) => {
+      renderIndexPerKey.current[k] = renderIndex.current;
+      if (k === 'telephone') {
+        console.log(renderIndex.current, 'updateHandler YES!!', k);
+      } else {
+        console.log(renderIndex.current, 'updateHandler', k);
       }
+
+      handlers.current[k] = v;
     },
-    [errors, sErrors, initialErrorCache]
+    []
   );
 
-  const clearErrors = React.useCallback(() => {
-    sErrors({});
-  }, [sErrors]);
+  const checkError = useCheckError<T>({ locale });
 
-  const checkError = useCheckError<T>(locale, sErrors);
-  return { errors, setErrors: sErrors, checkError, clearErrors, setError };
+  const hasError = React.useCallback(
+    <K extends DotNestedKeys<T>>(k: K): boolean => {
+      if (renderIndexPerKey.current[k] !== renderIndex.current) {
+        console.log(renderIndex.current, 'hasError NO!!', k);
+        return false;
+      }
+      const isTouched = deepGet(touched.current, k);
+      const isFocusedOnce = deepGet(focusedOnce.current, k);
+      const error = checkError(
+        k,
+        handlers.current[k],
+        values.current[k],
+        values.current
+      );
+
+      if ((isTouched && isFocusedOnce) || wasSubmitted.current) {
+        const noError = error === false;
+        return !noError;
+      }
+      return false;
+    },
+    []
+  );
+
+  const checkErrors = React.useCallback(() => {
+    // TODO:
+    return false as boolean;
+  }, []);
+
+  React.useEffect(() => {
+    const errors = Object.keys(handlers.current).reduce((acc, k) => {
+      const key = k as DotNestedKeys<T>;
+      const handler = handlers.current[key];
+      const value = deepGet(values.current, key) as GetFieldType<T, typeof key>;
+      const allValues = values.current;
+      const err = checkError(k as any, handler, value, allValues);
+      if (err) {
+        acc[key] = err as any;
+      }
+      return acc;
+    }, {});
+    console.log('errors', { errors, handlers });
+  });
+
+  return {
+    checkError,
+    hasError,
+    checkErrors,
+    updateHandler,
+
+    errors: {
+      // TODO: this is stupid
+      current: {},
+    },
+  };
 }
