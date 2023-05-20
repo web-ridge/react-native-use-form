@@ -35,7 +35,7 @@ export function getTranslation<K extends keyof TranslationsType>(
       `[react-native-use-form] ${locale} is registered, but ${key} is missing`
     );
   }
-  return translation || key;
+  return (translation || key) as any;
 }
 export function registerDefaultLocale(locale: string) {
   defaultLocale = locale;

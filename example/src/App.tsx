@@ -4,15 +4,18 @@ import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import {
   registerTranslation,
   en,
+  nl,
   Form,
   useFormState,
 } from 'react-native-use-form';
-import { Appbar, Button, Surface, Title } from 'react-native-paper';
+import { Appbar, Button, Surface, Text, Title } from 'react-native-paper';
 import TextInputWithError from './TextInputWithError';
 import { useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SegmentedButtons } from 'react-native-paper';
 
 registerTranslation('en', en);
+registerTranslation('nl', nl);
 type AddressCompany = {
   name: string;
 };
@@ -35,7 +38,13 @@ type FormType = {
   };
   address?: AddressType | null;
 };
+
+enum Language {
+  EN = 'en',
+  NL = 'nl',
+}
 export default function App() {
+  const [locale, setLocale] = React.useState<Language>(Language.EN);
   const [hideRequiredField, setHideRequiredField] = React.useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const [{ submit, formProps, hasError }, fh] = useFormState<FormType>(
@@ -54,6 +63,7 @@ export default function App() {
     },
     {
       scrollViewRef: scrollViewRef,
+      locale,
       onChange: () => {
         // TODO: fix enum in backend
       },
@@ -73,6 +83,23 @@ export default function App() {
         </Appbar.Header>
         <ScrollView style={styles.scrollView} ref={scrollViewRef}>
           <View style={styles.inner}>
+            <Text>Number format + default errors</Text>
+            <SegmentedButtons
+              multiSelect={false}
+              value={locale}
+              onValueChange={(v) => setLocale(v as Language)}
+              buttons={[
+                {
+                  value: Language.EN,
+                  label: 'English',
+                },
+                {
+                  value: Language.NL,
+                  label: 'Dutch',
+                },
+              ]}
+            />
+
             <Form {...formProps}>
               <TextInputWithError
                 mode="outlined"

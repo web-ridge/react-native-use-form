@@ -2,6 +2,7 @@ import useRefState from './useRefState';
 import * as React from 'react';
 import { useReferencedCallback } from './utils';
 import type { TextInput } from 'react-native';
+import type { IndexerType, ReferencerType } from './types';
 
 type RefKeyMap = Record<string, TextInput>;
 export type FormRefKeyMap = Record<number, RefKeyMap>;

@@ -39,7 +39,6 @@ export default function useFormState<T>(
     options,
     locale,
     context: ctx,
-    wasSubmitted,
     error,
     layout,
     value,
@@ -59,12 +58,9 @@ export default function useFormState<T>(
 
   const formState: FormStateType<T> = {
     wasSubmitted: wasSubmitted.wasSubmitted.current,
-    hasErrors: error.checkErrors(),
-    // errors: errors,
+    hasErrors: error.hasErrors,
+    errors: error.errors.current,
     hasError: error.hasError,
-    // TODO: why should this be needed?
-    // clearErrors: error,
-    // setError: error.setError,
 
     values: value.values.current,
     setValues: value.setValues,

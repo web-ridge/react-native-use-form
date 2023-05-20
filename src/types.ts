@@ -127,11 +127,11 @@ export type FormStateType<T> = {
     value: GetFieldType<T, K>
   ) => void;
   setTouched: <K extends DotNestedKeys<T>>(key: K, value: boolean) => void;
-  setError: <K extends DotNestedKeys<T>>(
-    key: K,
-    value: boolean | string | undefined
-  ) => void;
-  clearErrors: () => void;
+  // setError: <K extends DotNestedKeys<T>>(
+  //   key: K,
+  //   value: boolean | string | undefined
+  // ) => void;
+  // clearErrors: () => void;
   submit: () => void;
   formProps: {
     indexer: IndexerType;
@@ -217,9 +217,19 @@ export interface CustomizingRaw<T, K extends DotNestedKeys<T>>
     | undefined;
   onLayout?: ((event: LayoutChangeEvent) => void) | undefined;
 }
+export type FormRawProps<V> = {
+  testID: string;
+  value: V;
+  onChange: (v: V) => void;
+  onBlur: TextInputProps['onBlur'];
+  onLayout: TextInputProps['onLayout'];
+  error: boolean;
+  errorMessage: string | undefined;
+};
 
 type FormRawType<T> = <K extends DotNestedKeysWithRoot<T>>(
   key: K,
+  //@ts-ignore
   handlers?: CustomizingRaw<T, K>
 ) => FormRawProps<GetFieldType<T, K>>;
 

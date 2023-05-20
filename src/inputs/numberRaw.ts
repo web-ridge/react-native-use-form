@@ -22,7 +22,7 @@ export function useNumberRaw<T>({
     FieldsLastCharacters<T>
   >({});
   const separationCharacter = React.useMemo(() => {
-    const hasIntlSupport = typeof Intl !== undefined;
+    const hasIntlSupport = typeof Intl !== 'undefined';
     if (hasIntlSupport) {
       const formatter = new Intl.NumberFormat(locale);
       const formatted = formatter.format(1.1);
@@ -33,6 +33,10 @@ export function useNumberRaw<T>({
     );
     return '.';
   }, [locale]);
+  console.log({
+    separationCharacter,
+    locale,
+  });
   return <K extends DotNestedKeys<T>>(
     k: K,
     h: Customizing<T, K> | undefined,

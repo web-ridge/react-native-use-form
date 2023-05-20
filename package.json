@@ -155,5 +155,8 @@
         }
       ]
     ]
+  },
+  "dependencies": {
+    "fast-equals": "^5.0.1"
   }
 }

@@ -69,6 +69,7 @@ function isObject<T>(val: T) {
   }
   return typeof val === 'function' || typeof val === 'object';
 }
+
 export function removeEmpty<
   T extends { [s: string]: unknown } | ArrayLike<unknown>
 >(obj: T): T {

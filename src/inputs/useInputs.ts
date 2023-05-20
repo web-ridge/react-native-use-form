@@ -27,7 +27,6 @@ import type { FormContextType } from '../FormContext';
 import type { UseValuesReturnType } from '../useValues';
 import type { UseTouchedReturnType } from '../useTouched';
 import type { UseFocusedOnceReturnType } from '../useFocusedOnce';
-import type { UseWasSubmittedReturnType } from '../useWasSubmitted';
 
 export type UseInputsReturnType<T> = ReturnType<typeof useInputs<T>>;
 
@@ -36,8 +35,12 @@ export function useInputs<T>({
   locale,
   context,
   referencedCallback,
-  wasSubmitted: { wasSubmitted },
-  error: { checkError, updateHandler: updateErrorHandler, hasError },
+  error: {
+    errors,
+    updateHandler: updateErrorHandler,
+    hasError,
+    checkAndSetError,
+  },
   layout: { onLayoutKey },
   value: { values, setValues },
   touch: { touched, setTouched },
@@ -49,7 +52,6 @@ export function useInputs<T>({
     formIndex: number;
   };
   referencedCallback: ReferencedCallback;
-  wasSubmitted: UseWasSubmittedReturnType;
   error: UseErrorsReturnType<T>;
   layout: UseLayoutReturnType<T>;
   value: UseValuesReturnType<T>;
@@ -86,25 +88,30 @@ export function useInputs<T>({
       (h as CustomizingRaw<T, K>)?.onChange?.(enhancedV as any);
 
       setValues(enhancedNewValues);
-      checkError(k, h, enhancedV!, enhancedNewValues);
+      checkAndSetError(
+        k,
+        h as BaseCustomizing<T, K>,
+        enhancedV as any,
+        enhancedNewValues
+      );
       setTouched(k, true);
 
       onChange.current?.(enhancedNewValues, {
         touched: touched.current,
         focusedOnce: focusedOnce.current,
-        // errors: errors.current,
+        errors: errors.current,
       });
     },
     [
-      checkError,
-      enhance,
-      // errors,
-      focusedOnce,
-      onChange,
-      setTouched,
-      setValues,
-      touched,
       values,
+      enhance,
+      setValues,
+      checkAndSetError,
+      setTouched,
+      onChange,
+      touched,
+      focusedOnce,
+      errors,
     ]
   );
 
@@ -117,15 +124,14 @@ export function useInputs<T>({
       }
     );
   const baseProps: InputT<FormInputBaseProps> = (k, h) => {
-    updateErrorHandler(k, h as BaseCustomizing<K, string>);
+    updateErrorHandler(k, h);
     return removeEmpty({
       ...context.referencer(k, context.formIndex),
       testID: k,
       onLayout: onLayoutKey(k),
       onBlur: blur(k, h),
       error: hasError(k),
-      errorMessage: 'TODO',
-      // errorMessage: deepGet(errors.current, k),
+      errorMessage: deepGet(errors.current, k),
       label: h?.label,
     });
   };
