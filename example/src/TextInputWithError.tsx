@@ -14,6 +14,7 @@ function TextInputWithError(
   },
   ref: any
 ) {
+  console.log('render', rest.label);
   return (
     <>
       {/*// @ts-ignore*/}
@@ -25,4 +26,4 @@ function TextInputWithError(
     </>
   );
 }
-export default React.forwardRef(TextInputWithError);
+export default React.memo(React.forwardRef(TextInputWithError));

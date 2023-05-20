@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { IndexerType, ReferencerType } from './useFormState';
+import type { IndexerType, ReferencerType } from './types';
 // import { MutableRefObject } from 'react';
 
 export type FormContextType = {
