@@ -126,7 +126,6 @@ export function useInputs<T>({
   const baseProps: InputT<FormInputBaseProps> = (k, h) => {
     updateErrorHandler(k, h);
     return removeEmpty({
-      ...context.referencer(k, context.formIndex),
       testID: k,
       onLayout: onLayoutKey(k),
       onBlur: blur(k, h),
@@ -137,6 +136,7 @@ export function useInputs<T>({
   };
 
   const text: InputT<FormTextInputProps> = (k, h) => ({
+    ...context.referencer(k, context.formIndex),
     ...baseProps(k, h),
     value: deepGet(values.current, k) || '',
     onChangeText: referencedCallback(
@@ -147,6 +147,7 @@ export function useInputs<T>({
 
   const numberRawCreator = useNumberRaw<T>({ locale, referencedCallback });
   const numberRaw: InputT<FormTextInputProps> = (k, h) => ({
+    ...context.referencer(k, context.formIndex),
     ...baseProps(k, h),
     ...numberRawCreator(k, h, values.current, changeValue),
   });
