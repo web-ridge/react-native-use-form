@@ -58,7 +58,6 @@ export default function useErrors<T>({
         newValues
       );
       const currentError = deepGet(errors.current, key);
-      console.log('directly update error', currentError !== err);
       if (currentError !== err) {
         setErrors((prev) => {
           return deepSet(prev, key, err) as any;

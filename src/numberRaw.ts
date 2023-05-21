@@ -33,10 +33,6 @@ export function useNumberRaw<T>({
     );
     return '.';
   }, [locale]);
-  console.log({
-    separationCharacter,
-    locale,
-  });
   return <K extends DotNestedKeys<T>>(
     k: K,
     h: Customizing<T, K> | undefined,
