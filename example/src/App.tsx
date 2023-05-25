@@ -8,7 +8,7 @@ import {
   Form,
   useFormState,
 } from 'react-native-use-form';
-import { Appbar, Button, Surface, Text, Title } from 'react-native-paper';
+import { Appbar, Button, Text } from 'react-native-paper';
 import TextInputWithError from './TextInputWithError';
 import { useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -30,7 +30,9 @@ type FormType = {
   password: string;
   age: number | undefined;
   money: number | undefined;
+  description: string | undefined;
   postalCode: string | undefined;
+  postalCodeDisabled: string | undefined;
   organization: {
     name: string;
     telephone: string;
@@ -52,9 +54,11 @@ export default function App() {
       email: '',
       telephone: '',
       password: '',
-      age: 0,
-      money: 0,
+      age: undefined,
+      money: undefined,
+      description: '',
       postalCode: '',
+      postalCodeDisabled: '',
       organization: {
         name: '',
         telephone: '',
@@ -135,6 +139,16 @@ export default function App() {
                   label: 'Postalcode',
                 })}
               />
+              <TextInputWithError
+                editable={false}
+                mode="outlined"
+                {...fh.text('postalCode', {
+                  enhance: (v) => {
+                    return (v || '').toUpperCase();
+                  },
+                  label: 'Postalcode (disabled)',
+                })}
+              />
 
               <TextInputWithError
                 mode="outlined"
@@ -189,8 +203,17 @@ export default function App() {
                   label: 'Organization revenue',
                 })}
               />
-              <AddressEdit {...fh.raw('address')} />
-              <AddressCompanyEdit {...fh.raw('address.company')} />
+              <TextInputWithError
+                mode="outlined"
+                {...fh.text('description', {
+                  label: 'Description',
+                  required: true,
+                  minLength: 3,
+                  maxLength: 10,
+                })}
+              />
+              {/*<AddressEdit {...fh.raw('address')} />*/}
+              {/*<AddressCompanyEdit {...fh.raw('address.company')} />*/}
               <Button
                 mode="contained"
                 onPress={submit}
@@ -206,66 +229,66 @@ export default function App() {
   );
 }
 
-function AddressEdit({
-  value,
-  onChange,
-  ...rest
-}: {
-  value: AddressType | null | undefined;
-  onChange: (v: AddressType | null | undefined) => void;
-}) {
-  const [{ formProps }, fh] = useFormState<AddressType>(
-    value || { street: '', houseNumber: '', company: { name: '' } },
-    {
-      onChange,
-    }
-  );
-  return (
-    <Surface {...rest}>
-      <Title>Nested form</Title>
-      <Form {...formProps}>
-        <TextInputWithError
-          mode="outlined"
-          label="Street"
-          {...fh.streetAddress('street', { required: true })}
-        />
-        <TextInputWithError
-          mode="outlined"
-          label="House number"
-          {...fh.streetAddress('houseNumber')}
-        />
-      </Form>
-    </Surface>
-  );
-}
-
-function AddressCompanyEdit({
-  value,
-  onChange,
-  ...rest
-}: {
-  value: AddressCompany | undefined | null;
-  onChange: (v: AddressCompany | undefined | null) => void;
-}) {
-  const [{ formProps }, fh] = useFormState<AddressCompany>(
-    value || { name: '' },
-    {
-      onChange,
-    }
-  );
-  return (
-    <Surface {...rest} style={{ padding: 12 }}>
-      <Title>Nested form</Title>
-      <Form {...formProps}>
-        <TextInputWithError
-          mode="outlined"
-          label="Street"
-          {...fh.text('name')}
-        />
-      </Form>
-    </Surface>
-  );
-}
+// function AddressEdit({
+//   value,
+//   onChange,
+//   ...rest
+// }: {
+//   value: AddressType | null | undefined;
+//   onChange: (v: AddressType | null | undefined) => void;
+// }) {
+//   const [{ formProps }, fh] = useFormState<AddressType>(
+//     value || { street: '', houseNumber: '', company: { name: '' } },
+//     {
+//       onChange,
+//     }
+//   );
+//   return (
+//     <Surface {...rest}>
+//       <Title>Nested form</Title>
+//       <Form {...formProps}>
+//         <TextInputWithError
+//           mode="outlined"
+//           label="Street"
+//           {...fh.streetAddress('street', { required: true })}
+//         />
+//         <TextInputWithError
+//           mode="outlined"
+//           label="House number"
+//           {...fh.streetAddress('houseNumber')}
+//         />
+//       </Form>
+//     </Surface>
+//   );
+// }
+//
+// function AddressCompanyEdit({
+//   value,
+//   onChange,
+//   ...rest
+// }: {
+//   value: AddressCompany | undefined | null;
+//   onChange: (v: AddressCompany | undefined | null) => void;
+// }) {
+//   const [{ formProps }, fh] = useFormState<AddressCompany>(
+//     value || { name: '' },
+//     {
+//       onChange,
+//     }
+//   );
+//   return (
+//     <Surface {...rest} style={{ padding: 12 }}>
+//       <Title>Nested form</Title>
+//       <Form {...formProps}>
+//         <TextInputWithError
+//           mode="outlined"
+//           label="Street"
+//           {...fh.text('name')}
+//         />
+//       </Form>
+//     </Surface>
+//   );
+// }
 
 const telephoneRegex = {
   regex: new RegExp(/^\d+$/),

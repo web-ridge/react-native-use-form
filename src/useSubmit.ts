@@ -8,6 +8,7 @@ import type { UseValuesReturnType } from './useValues';
 import type { UseTouchedReturnType } from './useTouched';
 import type { UseFocusedOnceReturnType } from './useFocusedOnce';
 import { deepGet } from './objectPath';
+import { Keyboard } from 'react-native';
 
 export type UseSubmitReturnType<T> = ReturnType<typeof useSubmit<T>>;
 
@@ -36,6 +37,7 @@ export function useSubmit<T>({
   return {
     wasSubmitted,
     submit: React.useCallback(() => {
+      Keyboard.dismiss();
       wasSubmitted.setWasSubmitted(true);
       // if it returns an object there are errors
       if (hasErrors) {

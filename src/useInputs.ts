@@ -23,17 +23,17 @@ import {
 import * as React from 'react';
 import type { UseErrorsReturnType } from './useErrors';
 import type { UseLayoutReturnType } from './useLayout';
-import type { FormContextType } from './FormContext';
 import type { UseValuesReturnType } from './useValues';
 import type { UseTouchedReturnType } from './useTouched';
 import type { UseFocusedOnceReturnType } from './useFocusedOnce';
+import { UseNextAndSubmitRefReturnType } from './useNextAndSubmitRef';
 
 export type UseInputsReturnType<T> = ReturnType<typeof useInputs<T>>;
 
 export function useInputs<T>({
   options,
   locale,
-  context,
+
   referencedCallback,
   error: {
     errors,
@@ -45,18 +45,17 @@ export function useInputs<T>({
   value: { values, setValues },
   touch: { touched, setTouched },
   focusedOnce: { focusedOnce, setFocusedOnce },
+  nextAndSubmit: { inputReferencer },
 }: {
   options: FormOptions<T> | undefined;
   locale: string;
-  context: FormContextType & {
-    formIndex: number;
-  };
   referencedCallback: ReferencedCallback;
   error: UseErrorsReturnType<T>;
   layout: UseLayoutReturnType<T>;
   value: UseValuesReturnType<T>;
   touch: UseTouchedReturnType<T>;
   focusedOnce: UseFocusedOnceReturnType<T>;
+  nextAndSubmit: UseNextAndSubmitRefReturnType;
 }) {
   const onChange = useLatest(options?.onChange);
   const enhance = useLatest(options?.enhance);
@@ -136,7 +135,7 @@ export function useInputs<T>({
   };
 
   const text: InputT<FormTextInputProps> = (k, h) => ({
-    ...context.referencer(k, context.formIndex),
+    ...inputReferencer(k),
     ...baseProps(k, h),
     value: deepGet(values.current, k) || '',
     onChangeText: referencedCallback(
@@ -147,7 +146,7 @@ export function useInputs<T>({
 
   const numberRawCreator = useNumberRaw<T>({ locale, referencedCallback });
   const numberRaw: InputT<FormTextInputProps> = (k, h) => ({
-    ...context.referencer(k, context.formIndex),
+    ...inputReferencer(k),
     ...baseProps(k, h),
     ...numberRawCreator(k, h, values.current, changeValue),
   });

@@ -7,7 +7,7 @@ import type {
   TextInputFocusEventData,
   TextInputProps,
 } from 'react-native';
-import type { TextInput } from 'react-native';
+
 import type { ScrollView, View } from 'react-native';
 
 type GetIndexedField<T, K> = K extends keyof NonNullable<T>
@@ -133,10 +133,7 @@ export type FormStateType<T> = {
   // ) => void;
   // clearErrors: () => void;
   submit: () => void;
-  formProps: {
-    indexer: IndexerType;
-    referencer: ReferencerType;
-  };
+  formProps: {};
   setValues: React.Dispatch<SetStateAction<T>>;
   hasError: <K extends DotNestedKeys<T>>(key: K) => boolean;
 };
@@ -244,15 +241,4 @@ type FormTextType<T> = <K extends DotNestedKeys<T>>(
 
 export type FieldsLastCharacters<T> = {
   [key in keyof T]?: string | undefined;
-};
-
-type ReferencerReturns = TextInputProps & { ref: React.Ref<TextInput> };
-export type ReferencerType = (
-  key: string,
-  formIndex: number
-) => ReferencerReturns;
-
-export type IndexerType = {
-  add: () => number;
-  i: number;
 };

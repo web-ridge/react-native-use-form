@@ -1,14 +1,6 @@
 import * as React from 'react';
-import type { IndexerType, ReferencerType } from './types';
-// import { MutableRefObject } from 'react';
 
-export type FormContextType = {
-  indexer: IndexerType;
-  referencer: ReferencerType;
+export type FormContextType = {};
+const empty = {};
 
-  // refForKey: MutableRefObject<FormRefKeyMap>;
-};
-
-export const FormContext = React.createContext<FormContextType | undefined>(
-  undefined
-);
+export const FormContext = React.createContext<FormContextType>(empty);

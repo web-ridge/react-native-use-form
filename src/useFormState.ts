@@ -1,7 +1,7 @@
 import { useReferencedCallback } from './utils';
 import type { FormStateType, FormOptions } from './types';
 import { defaultLocale } from './translations/utils';
-import { useFormContext } from './useFormContext';
+
 import { useInputs } from './useInputs';
 import { useSubmit } from './useSubmit';
 import useLayout from './useLayout';
@@ -11,6 +11,7 @@ import useValues from './useValues';
 import useFocusedOnce from './useFocusedOnce';
 import useWasSubmitted from './useWasSubmitted';
 import { FormInputsType } from './types';
+import useNextAndSubmitRef from './useNextAndSubmitRef';
 
 export default function useFormState<T>(
   initialState: T,
@@ -22,7 +23,6 @@ export default function useFormState<T>(
   const focusedOnce = useFocusedOnce<T>();
   const wasSubmitted = useWasSubmitted();
   const referencedCallback = useReferencedCallback();
-  const ctx = useFormContext();
 
   const layout = useLayout<T>({
     referencedCallback,
@@ -36,17 +36,6 @@ export default function useFormState<T>(
     focusedOnce,
     wasSubmitted,
   });
-  const input = useInputs<T>({
-    options,
-    locale,
-    context: ctx,
-    error,
-    layout,
-    value,
-    touch,
-    focusedOnce,
-    referencedCallback,
-  });
   const submit = useSubmit<T>({
     options,
     layout,
@@ -55,6 +44,20 @@ export default function useFormState<T>(
     wasSubmitted,
     value,
     focusedOnce,
+  });
+
+  const nextAndSubmit = useNextAndSubmitRef<T>({ submit });
+
+  const input = useInputs<T>({
+    options,
+    locale,
+    error,
+    layout,
+    value,
+    touch,
+    focusedOnce,
+    referencedCallback,
+    nextAndSubmit,
   });
 
   const formState: FormStateType<T> = {
@@ -75,10 +78,7 @@ export default function useFormState<T>(
 
     submit: submit.submit,
 
-    formProps: {
-      referencer: ctx.referencer,
-      indexer: ctx.indexer,
-    },
+    formProps: {},
   };
 
   return [

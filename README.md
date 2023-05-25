@@ -27,7 +27,7 @@ Simple form library for React Native with great UX for developer and end-user ap
 - Email, username, password, number, numberText, decimal, decimalText,
 - Great typescript support!
 - Nested object with dot notation
-- Nested forms
+- ~~Nested forms~~ (don't work well yet)
 - Great decimal support with support for , notation and automatically convert it to a Number object
 
 See a demo: https://twitter.com/RichardLindhout/status/1344009881863516165
