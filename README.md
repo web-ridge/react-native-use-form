@@ -22,7 +22,8 @@ Simple form library for React Native with great UX for developer and end-user ap
 
 
 - Autoscroll to next fields with keyboard
-- Validation (we will add more in built features)
+- Validation
+- Autoscroll to errors in form if submit validation fails
 - Automatically adds a lot of props e.g. when you use the telephone('telNumber') it will open up the right keyboard + autocomplete
 - Email, username, password, number, numberText, decimal, decimalText,
 - Great typescript support!
