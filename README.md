@@ -31,7 +31,7 @@ Simple form library for React Native with great UX for developer and end-user ap
 - ~~Nested forms~~ (don't work well yet)
 - Great decimal support with support for , notation and automatically convert it to a Number object
 
-See a demo: https://twitter.com/RichardLindhout/status/1344009881863516165
+See an (older) demo: https://twitter.com/RichardLindhout/status/1344009881863516165
 
 ## Installation
 
@@ -47,7 +47,7 @@ npm install react-native-use-form
 
 ## Import some localized strings
 Ideally you do this somewhere in your `index.js` before `react-native-use-form` is used.
-Currently we have en/nl/de/pl/pt/ar/ko/fr translations but it's really easy to add one extra since it are only some labels and error messages.
+Currently we have en/nl/de/pl/pt/ar/ko/frf translations but it's really easy to add one extra since it are only some labels and error messages.
 
 ```tsx
 // e.g in your index.js
