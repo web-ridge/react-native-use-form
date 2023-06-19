@@ -84,12 +84,14 @@ registerTranslation("en", {
 })
 ```
 
-## Usage
+## Advanced example
+
+Also see /demo folder in this repository to see advanced usage!
 ```tsx
 
 import * as React from 'react';
 
-import { View } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { useFormState, Form } from 'react-native-use-form';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
@@ -97,6 +99,7 @@ import { Button, HelperText, TextInput } from 'react-native-paper';
 
 
 export default function App() {
+  const scrollViewRef = useRef<ScrollView>(null);
   const [
     { errors, submit, formProps, hasError },
     { email, telephone, password },
@@ -107,6 +110,7 @@ export default function App() {
       password: '',
     },
     {
+      scrollViewRef, // optional if you want to scroll to error on submit (long forms)
       locale: 'en', // optional override
       onChange: (latestValues) => {
         // optional: do something with latestValues
@@ -117,7 +121,8 @@ export default function App() {
     }
   );
   return (
-    <View
+    <ScrollView
+      ref={scrollViewRef}
       style={{
         flex: 1,
         maxWidth: 500,
@@ -158,7 +163,7 @@ export default function App() {
           Save
         </Button>
       </Form>
-    </View>
+    </ScrollView>
   );
 }
 
