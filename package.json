@@ -31,9 +31,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "prepack": "bob build",
-    "release": "dotenv release-it --ci --",
+    "release": "release-it --ci --github.autoGenerate",
     "example": "yarn --cwd example",
-    "bootstrap": "yarn example && yarn install"
+    "bootstrap": "yarn example && yarn install",
+    "build-example": "cd example && npx expo export:web"
   },
   "keywords": [
     "react-native",
