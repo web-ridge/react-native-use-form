@@ -22,7 +22,8 @@ Simple form library for React Native with great UX for developer and end-user ap
 
 
 - Autoscroll to next fields with keyboard
-- Validation (we will add more in built features)
+- Validation
+- Autoscroll to errors in form if submit validation fails
 - Automatically adds a lot of props e.g. when you use the telephone('telNumber') it will open up the right keyboard + autocomplete
 - Email, username, password, number, numberText, decimal, decimalText,
 - Great typescript support!
@@ -30,7 +31,7 @@ Simple form library for React Native with great UX for developer and end-user ap
 - ~~Nested forms~~ (don't work well yet)
 - Great decimal support with support for , notation and automatically convert it to a Number object
 
-See a demo: https://twitter.com/RichardLindhout/status/1344009881863516165
+See an (older) demo: https://twitter.com/RichardLindhout/status/1344009881863516165
 
 ## Installation
 
@@ -46,7 +47,7 @@ npm install react-native-use-form
 
 ## Import some localized strings
 Ideally you do this somewhere in your `index.js` before `react-native-use-form` is used.
-Currently we have en/nl/de/pl/pt/ar/ko/fr translations but it's really easy to add one extra since it are only some labels and error messages.
+Currently we have en/nl/de/pl/pt/ar/ko/frf translations but it's really easy to add one extra since it are only some labels and error messages.
 
 ```tsx
 // e.g in your index.js
@@ -83,12 +84,14 @@ registerTranslation("en", {
 })
 ```
 
-## Usage
+## Advanced example
+
+Also see /demo folder in this repository to see advanced usage!
 ```tsx
 
 import * as React from 'react';
 
-import { View } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { useFormState, Form } from 'react-native-use-form';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
@@ -96,6 +99,7 @@ import { Button, HelperText, TextInput } from 'react-native-paper';
 
 
 export default function App() {
+  const scrollViewRef = useRef<ScrollView>(null);
   const [
     { errors, submit, formProps, hasError },
     { email, telephone, password },
@@ -106,6 +110,7 @@ export default function App() {
       password: '',
     },
     {
+      scrollViewRef, // optional if you want to scroll to error on submit (long forms)
       locale: 'en', // optional override
       onChange: (latestValues) => {
         // optional: do something with latestValues
@@ -116,7 +121,8 @@ export default function App() {
     }
   );
   return (
-    <View
+    <ScrollView
+      ref={scrollViewRef}
       style={{
         flex: 1,
         maxWidth: 500,
@@ -157,7 +163,7 @@ export default function App() {
           Save
         </Button>
       </Form>
-    </View>
+    </ScrollView>
   );
 }
 
