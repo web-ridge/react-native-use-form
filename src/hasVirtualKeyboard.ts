@@ -1,4 +1,4 @@
-const hasTouch = 'ontouchstart' in window;
+const hasTouch = typeof window !== 'undefined' && 'ontouchstart' in window;
 
 // const screenIsPortrait = window.matchMedia('(orientation: portrait)').matches;
 // return screenIsPortrait ? 'portrait' : 'landscape';
@@ -17,6 +17,8 @@ const hasTouch = 'ontouchstart' in window;
 //   }
 // });
 
-const screenIsLarge = window.matchMedia('(min-width: 1000px)').matches;
+const screenIsLarge =
+  typeof window !== 'undefined' &&
+  window.matchMedia('(min-width: 1000px)').matches;
 const hasVirtualKeyboard = hasTouch && !screenIsLarge;
 export default hasVirtualKeyboard;
