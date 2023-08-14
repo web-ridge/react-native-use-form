@@ -211,7 +211,7 @@ See the [contributing guide](../CONTRIBUTING.md) to learn how to contribute to t
 MIT
 
 ### Checkout our other libraries
-- Simmple cross platform navigation library for React Native: [react-native-ridge-navigation](https://github.com/web-ridge/react-native-ridge-navigation)
+- Simple cross platform navigation library for React Native: [react-native-ridge-navigation](https://github.com/web-ridge/react-native-ridge-navigation)
 - Smooth and fast cross platform Material Design date and time picker for React Native Paper: [react-native-paper-dates](https://github.com/web-ridge/react-native-paper-dates)
 - Smooth and fast cross platform Material Design Tabs for React Native Paper: [react-native-paper-tabs](https://github.com/web-ridge/react-native-paper-tabs)
 - Simple translations in React (Native): [react-ridge-translations](https://github.com/web-ridge/react-ridge-translations)
