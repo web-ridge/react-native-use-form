@@ -6,6 +6,8 @@ export type {
   BooleanUtility,
   FormTextInputProps,
   FormRawProps,
+  FormInputsType,
+  FormStateType,
 } from './types';
 export type { TranslationsType } from './translations/utils';
 export {
