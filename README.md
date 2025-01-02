@@ -21,14 +21,15 @@
 Simple form library for React Native with great UX for developer and end-user api and some code inspired by [wsmd/react-native-use-form](https://github.com/wsmd/react-native-use-form)
 
 
-- Autoscroll to next fields with keyboard
+- Autoscroll to next fields with keyboard (iOS/Android)
 - Validation
 - Autoscroll to errors in form if submit validation fails
 - Automatically adds a lot of props e.g. when you use the telephone('telNumber') it will open up the right keyboard + autocomplete
 - Email, username, password, number, numberText, decimal, decimalText,
 - Great typescript support!
 - Nested object with dot notation
-- Great decimal support with support for , notation and automatically convert it to a Number object
+- Locale decimal support
+- Great decimal support with support for , notation and automatically convert it to a Number object (based on locale)
 
 See an (older) demo: https://twitter.com/RichardLindhout/status/1344009881863516165
 
