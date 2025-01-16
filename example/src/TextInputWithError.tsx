@@ -14,7 +14,6 @@ function TextInputWithError(
   },
   ref: any
 ) {
-  console.log('render', rest.label);
   return (
     <>
       {/*// @ts-ignore*/}

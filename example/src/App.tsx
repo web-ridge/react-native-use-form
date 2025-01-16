@@ -49,7 +49,7 @@ export default function App() {
   const [locale, setLocale] = React.useState<Language>(Language.EN);
   const [hideRequiredField, setHideRequiredField] = React.useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  const [{ submit, formProps, hasError }, fh] = useFormState<FormType>(
+  const [{ submit, formProps }, fh] = useFormState<FormType>(
     {
       email: '',
       telephone: '',
@@ -107,8 +107,8 @@ export default function App() {
             <Form {...formProps}>
               <TextInputWithError
                 mode="outlined"
-                error={hasError('email')}
                 {...fh.email('email', {
+                  required: true,
                   validate: (v) => {
                     return looksLikeMail(v) ? true : 'Email-address is invalid';
                   },
