@@ -74,7 +74,7 @@ export default function useErrors<T>({
       const error = deepGet(errors.current, k);
 
       if ((isTouched && isFocusedOnce) || wasSubmitted.current) {
-        const noError = error === false;
+        const noError = error === false || error === undefined || error === null;
         return !noError;
       }
       return false;
