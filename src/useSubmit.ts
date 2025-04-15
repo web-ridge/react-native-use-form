@@ -51,7 +51,7 @@ export function useSubmit<T>({
             })
           );
 
-          if (firstErrorY) {
+          if (firstErrorY && firstErrorY !== Infinity) {
             const extraPaddingTop = 24;
             scrollViewRef.current.scrollTo({
               y: firstErrorY - extraPaddingTop,
