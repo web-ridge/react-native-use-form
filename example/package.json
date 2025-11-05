@@ -22,7 +22,8 @@
     "@babel/core": "^7.20.0",
     "@expo/webpack-config": "^18.0.1",
     "babel-loader": "^8.1.0",
-    "babel-plugin-module-resolver": "^4.1.0"
+    "babel-plugin-module-resolver": "^4.1.0",
+    "prettier": "2.0.5"
   },
   "private": true
 }

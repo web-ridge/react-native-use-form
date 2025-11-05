@@ -1,4 +1,3 @@
-
 <h1 align="center">
   <img src="https://user-images.githubusercontent.com/6492229/120776507-9c7f1200-c524-11eb-905e-5ad46f2c2709.png" width="128">
   <br>
@@ -20,7 +19,6 @@
 
 Simple form library for React Native with great UX for developer and end-user api and some code inspired by [wsmd/react-native-use-form](https://github.com/wsmd/react-native-use-form)
 
-
 - Autoscroll to next fields with keyboard (iOS/Android)
 - Validation
 - Autoscroll to errors in form if submit validation fails
@@ -38,14 +36,15 @@ See an (older) demo: https://twitter.com/RichardLindhout/status/1344009881863516
 ```sh
 yarn add react-native-use-form
 ```
+
 or
+
 ```sh
 npm install react-native-use-form
 ```
 
-
-
 ## Import some localized strings
+
 Ideally you do this somewhere in your `index.js` before `react-native-use-form` is used.
 Currently we have en/nl/de/pl/pt/ar/ko/frf translations but it's really easy to add one extra since it are only some labels and error messages.
 
@@ -54,21 +53,21 @@ Currently we have en/nl/de/pl/pt/ar/ko/frf translations but it's really easy to 
 import {
   en,
   registerTranslation,
-  registerDefaultLocale
-} from 'react-native-use-form'
-registerTranslation('en', en)
+  registerDefaultLocale,
+} from 'react-native-use-form';
+registerTranslation('en', en);
 // you can override the locale per form
-registerDefaultLocale('en') // optional (default = en)
+registerDefaultLocale('en'); // optional (default = en)
 // registerTranslation('nl', nl)
 ```
 
 ### or register your own
+
 Please send a PR with your language to make sure all locales are there next time
+
 ```tsx
-import {
-  registerTranslation,
-} from 'react-native-use-form'
-registerTranslation("en", {
+import { registerTranslation } from 'react-native-use-form';
+registerTranslation('en', {
   required: (params) => `${params.label || params.fieldKey} is required`,
   lengtShouldBeLongerThan: (params) =>
     `${params.label || params.fieldKey} length should be longer than ${
@@ -81,22 +80,19 @@ registerTranslation("en", {
   shouldFollowRegex: (params) =>
     params.errorMessage ||
     `${params.label || params.fieldKey} is not in the right format`,
-})
+});
 ```
 
 ## Advanced example
 
 Also see /demo folder in this repository to see advanced usage!
-```tsx
 
+```tsx
 import * as React from 'react';
 
 import { View, ScrollView } from 'react-native';
 import { useFormState, Form } from 'react-native-use-form';
 import { Button, HelperText, TextInput } from 'react-native-paper';
-
-
-
 
 export default function App() {
   const scrollViewRef = useRef<ScrollView>(null);
@@ -133,11 +129,10 @@ export default function App() {
         <TextInputWithError
           mode="outlined"
           {...email('email', {
-
             validate: (v) => {
               return looksLikeMail(v) ? true : 'Email-address is invalid';
             },
-            label: "E-mail"
+            label: 'E-mail',
           })}
         />
         <TextInputWithError
@@ -147,7 +142,7 @@ export default function App() {
             minLength: 3,
             maxLength: 10,
             shouldFollowRegexes: [telephoneRegex],
-            label: "Telefoon"
+            label: 'Telefoon',
           })}
         />
         <TextInputWithError
@@ -156,7 +151,7 @@ export default function App() {
             required: true,
             minLength: 3,
             maxLength: 10,
-            label: "Wachtwoord"
+            label: 'Wachtwoord',
           })}
         />
         <Button mode="contained" onPress={submit}>
@@ -167,9 +162,10 @@ export default function App() {
   );
 }
 
-
-
-function TextInputWithError({ errorMessage, ...rest }: React.ComponentProps<typeof TextInput> & { errorMessage?: string }) {
+function TextInputWithError({
+  errorMessage,
+  ...rest
+}: React.ComponentProps<typeof TextInput> & { errorMessage?: string }) {
   return (
     <>
       <TextInput {...rest} />
@@ -179,7 +175,6 @@ function TextInputWithError({ errorMessage, ...rest }: React.ComponentProps<type
     </>
   );
 }
-
 
 const telephoneRegex = {
   regex: new RegExp(/^\d+$/),
@@ -198,8 +193,6 @@ function looksLikeMail(str: string): boolean {
     str.length - lastDotPos > 2
   );
 }
-
-
 ```
 
 ## Contributing
@@ -211,6 +204,7 @@ See the [contributing guide](../CONTRIBUTING.md) to learn how to contribute to t
 MIT
 
 ### Checkout our other libraries
+
 - Simple cross platform navigation library for React Native: [react-native-ridge-navigation](https://github.com/web-ridge/react-native-ridge-navigation)
 - Smooth and fast cross platform Material Design date and time picker for React Native Paper: [react-native-paper-dates](https://github.com/web-ridge/react-native-paper-dates)
 - Smooth and fast cross platform Material Design Tabs for React Native Paper: [react-native-paper-tabs](https://github.com/web-ridge/react-native-paper-tabs)

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "example",
-    "slug": "example",
+    "name": "React Native Use Form - Demo",
+    "slug": "react-native-use-form-demo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,9 +14,7 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
     },
@@ -27,7 +25,9 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "React Native Use Form",
+      "description": "Advanced Form Management Library with Type-Safe Validation"
     }
   }
 }

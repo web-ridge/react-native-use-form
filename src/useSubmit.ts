@@ -15,7 +15,7 @@ export type UseSubmitReturnType<T> = ReturnType<typeof useSubmit<T>>;
 export function useSubmit<T>({
   options,
   layout,
-  error: { hasErrors, errors },
+  error: { errors, validateAllFields },
   wasSubmitted,
   value: { values },
   touch: { touched },
@@ -39,8 +39,12 @@ export function useSubmit<T>({
     submit: React.useCallback(() => {
       Keyboard.dismiss();
       wasSubmitted.setWasSubmitted(true);
+
+      // Re-validate all fields before submitting
+      const hasValidationErrors = validateAllFields();
+
       // if it returns an object there are errors
-      if (hasErrors) {
+      if (hasValidationErrors) {
         if (scrollViewRef?.current) {
           const errorKeys = Object.keys(layoutsRef.current).filter(
             (k) => !!deepGet(errors.current, k)
@@ -68,7 +72,7 @@ export function useSubmit<T>({
       });
     }, [
       wasSubmitted,
-      hasErrors,
+      validateAllFields,
       onSubmit,
       values,
       touched,

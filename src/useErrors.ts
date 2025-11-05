@@ -67,6 +67,28 @@ export default function useErrors<T>({
     [errors, locale, setErrors]
   );
 
+  const validateAllFields = React.useCallback(() => {
+    const errorsObject = Object.keys(handlers.current).reduce((acc, k) => {
+      const key = k as DotNestedKeys<T>;
+      const handler = handlers.current[key];
+      const value = deepGet(values.current, key);
+      const allValues = values.current;
+      const err = checkError(
+        locale,
+        key,
+        handler as any,
+        value as any,
+        allValues
+      );
+
+      acc = deepSet(acc, key, err);
+      return acc;
+    }, {} as any);
+
+    setErrors(errorsObject);
+    return checkErrorObject(errorsObject);
+  }, [locale, values, setErrors]);
+
   const hasError = React.useCallback(
     <K extends DotNestedKeys<T>>(k: K): boolean => {
       const isTouched = deepGet(touched.current, k);
@@ -74,7 +96,8 @@ export default function useErrors<T>({
       const error = deepGet(errors.current, k);
 
       if ((isTouched && isFocusedOnce) || wasSubmitted.current) {
-        const noError = error === false || error === undefined || error === null;
+        const noError =
+          error === false || error === undefined || error === null;
         return !noError;
       }
       return false;
@@ -113,5 +136,6 @@ export default function useErrors<T>({
     updateHandler,
     errors,
     checkAndSetError,
+    validateAllFields,
   };
 }

@@ -34,7 +34,8 @@
     "release": "release-it --ci --github.autoGenerate",
     "example": "yarn --cwd example",
     "bootstrap": "yarn example && yarn install",
-    "build-example": "cd example && npx expo export:web"
+    "build-example": "cd example && npx expo export:web",
+    "prettier-all": "prettier --write \"**/*.{js,ts,tsx,json,md}\""
   },
   "keywords": [
     "react-native",
