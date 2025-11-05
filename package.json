@@ -29,7 +29,7 @@
   "scripts": {
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint .",
+    "lint": "npx oxlint .",
     "prepack": "bob build",
     "release": "release-it --ci --github.autoGenerate",
     "example": "yarn --cwd example",
