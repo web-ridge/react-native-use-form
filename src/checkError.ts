@@ -27,7 +27,7 @@ export default function checkError<T, K extends DotNestedKeys<T>>(
     } else if (h.minLength !== undefined && `${v}`.length < h.minLength) {
       err = getTranslation(
         locale,
-        'lengtShouldBeLongerThan'
+        'lengthShouldBeLongerThan'
       )({
         fieldKey: k,
         label: h?.label,
